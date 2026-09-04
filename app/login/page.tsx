@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/app/lib/auth-client";
-import { signIn } from "@/app/lib/sign-in";
+import { signIn, signInWithGoogle } from "@/app/lib/sign-in";
 import { signUp } from "@/app/lib/sign-up";
 
 
@@ -43,6 +43,18 @@ export default function Page() {
 
   }
 
+  async function handleGoogleSignIn() {
+    setMessage("");
+    setIsSubmitting(true);
+
+    const result = await signInWithGoogle();
+
+    if (result.error) {
+      setIsSubmitting(false);
+      setMessage(result.error.message || "Something went wrong. Please try again.");
+    }
+  }
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#e8eee9] px-6 py-12 text-[#173b35]">
       <section className="grid w-full max-w-5xl overflow-hidden rounded-[2rem] bg-[#fffdf7] shadow-[0_24px_80px_rgba(23,59,53,0.14)] md:grid-cols-[0.9fr_1.1fr]">
@@ -70,6 +82,12 @@ export default function Page() {
             <label className="block text-sm font-semibold">Password<input required minLength={8} type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="mt-2 w-full rounded-xl border border-[#ccd8cf] bg-transparent px-4 py-3 font-normal outline-none transition focus:border-[#cf633f]" /></label>
             <button disabled={isSubmitting} className="w-full rounded-xl bg-[#cf633f] px-5 py-3 font-semibold text-white transition hover:bg-[#b94f30] disabled:cursor-wait disabled:opacity-60">{isSubmitting ? "Working..." : mode === "sign-in" ? "Sign in" : "Create account"}</button>
           </form>
+          {mode === "sign-in" && <>
+            <div className="my-6 flex items-center gap-4 text-xs font-semibold uppercase tracking-[0.15em] text-[#829189]"><span className="h-px flex-1 bg-[#d9e1d9]" />or<span className="h-px flex-1 bg-[#d9e1d9]" /></div>
+            <button type="button" onClick={handleGoogleSignIn} disabled={isSubmitting} className="w-full rounded-xl border border-[#ccd8cf] px-5 py-3 font-semibold text-[#173b35] transition hover:border-[#173b35] hover:bg-[#f3f6f1] disabled:cursor-wait disabled:opacity-60">
+              Continue with Google
+            </button>
+          </>}
           <Link href="/" className="mt-4 block w-full rounded-xl border border-[#ccd8cf] px-5 py-3 text-center text-sm font-semibold text-[#173b35] transition hover:border-[#173b35] hover:bg-[#f3f6f1]">
             Back to homepage
           </Link>

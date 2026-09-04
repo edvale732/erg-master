@@ -8,3 +8,10 @@ export function signIn(email: string, password: string) {
         rememberMe: false,
     });
 }
+
+export function signInWithGoogle() {
+    return authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/dashboard",
+    });
+}

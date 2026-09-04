@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/app/lib/auth";
 import { LogoutButton } from "@/app/dashboard/logout-button";
 
-export default async function Dashboard() {
+export default async function Page() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
