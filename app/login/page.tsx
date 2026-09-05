@@ -10,6 +10,7 @@ import { signUp } from "@/app/lib/sign-up";
 
 
 
+
 export default function Page() {
   const router = useRouter();
   const session = authClient.useSession();
@@ -60,7 +61,7 @@ export default function Page() {
     <main className="flex min-h-screen items-center justify-center bg-[#e8eee9] px-6 py-12 text-[#173b35]">
       <section className="relative w-full max-w-md rounded-[2rem] bg-[#fffdf7] p-8 shadow-[0_24px_80px_rgba(23,59,53,0.14)] sm:p-12">
         <Link href="/" aria-label="Go to home" className="absolute right-8 top-8 transition-opacity hover:opacity-70 sm:right-12 sm:top-12">
-          <Image src="/home.png" alt="" width={24} height={24} />
+          <Image src="/home.png" alt="" width={24} height={24} style={{ width: "24px", height: "24px" }} />
         </Link>
         <div className="mb-10 flex gap-6 border-b border-[#d9e1d9]">
           {(["sign-in", "sign-up"] as const).map((item) => (
@@ -79,7 +80,7 @@ export default function Page() {
         </form>
         {mode === "sign-in" ? <div className="mt-6 h-[82px]">
           <div className="flex items-center gap-4 text-xs font-semibold uppercase tracking-[0.15em] text-[#829189]"><span className="h-px flex-1 bg-[#d9e1d9]" />or<span className="h-px flex-1 bg-[#d9e1d9]" /></div>
-          <button type="button" onClick={handleGoogleSignIn} disabled={isSubmitting} className="mt-4 w-full rounded-xl border border-[#ccd8cf] px-5 py-3 font-semibold text-[#173b35] transition hover:border-[#173b35] hover:bg-[#f3f6f1] disabled:cursor-wait disabled:opacity-60">Continue with Google</button>
+          <button type="button" onClick={handleGoogleSignIn} disabled={isSubmitting} className="mt-4 flex w-full items-center justify-center gap-3 rounded-xl border border-[#ccd8cf] px-5 py-3 font-semibold text-[#173b35] transition hover:border-[#173b35] hover:bg-[#f3f6f1] disabled:cursor-wait disabled:opacity-60"><Image src="/google-g.png" alt="" width={34} height={34} />Continue with Google</button>
         </div> : <div aria-hidden="true" className="mt-6 h-[82px]" />}
         {message && <p role="status" className="mt-4 text-sm text-[#5b6d66]">{message}</p>}
       </section>
