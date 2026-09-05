@@ -33,6 +33,16 @@ export type State = {
   message?: string | null;
 };
 
+export type RowingSession = {
+  id: string;
+  sessionDate: string;
+  workoutType: string;
+  totalDistance: number;
+  totalTimeSeconds: number;
+  avgStrokeRate: number | null;
+  avgWatts: number | null;
+};
+
 const getFormValue = (formData: FormData, field: string) => {
   const value = formData.get(field);
   return typeof value === 'string' ? value : null;
@@ -72,6 +82,27 @@ const getAuthenticatedUserId = async () => {
 
   return session?.user.id ?? null;
 };
+
+export async function getRowingSessions(): Promise<RowingSession[]> {
+  const userId = await getAuthenticatedUserId();
+  if (!userId) return [];
+
+  const rows = await sql`
+    SELECT
+      id,
+      session_date::text AS "sessionDate",
+      workout_type AS "workoutType",
+      total_distance AS "totalDistance",
+      total_time_seconds AS "totalTimeSeconds",
+      avg_stroke_rate AS "avgStrokeRate",
+      avg_watts AS "avgWatts"
+    FROM rowing_sessions
+    WHERE user_id = ${userId}
+    ORDER BY session_date DESC, created_at DESC
+  `;
+
+  return rows as RowingSession[];
+}
 
 export async function createRowingSession(_prevState: State, formData: FormData) {
   const userId = await getAuthenticatedUserId();
