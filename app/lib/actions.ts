@@ -12,7 +12,7 @@ const sql = neon(`${process.env.DATABASE_URL}`);
 
 const RowingSessionSchema = z.object({
   id: z.uuid(),
-  userId: z.uuid({error: 'User is required'}),
+  userId: z.string({error: 'User is required'}).min(1, {error: 'User is required'}),
   sessionDate: z.string({error: 'Session date is required'}),
   workoutType: z.string({error: 'Workout type is required'}).min(1).max(50),
   totalDistance: z.number({error: 'Total distance is required'}).int().gt(0),
