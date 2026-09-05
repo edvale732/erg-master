@@ -1,8 +1,6 @@
-import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/app/lib/auth";
-import { LogoutButton } from "@/app/dashboard/logout-button";
 
 export default async function Page() {
   const session = await auth.api.getSession({
@@ -14,17 +12,6 @@ export default async function Page() {
   }
 
   return (
-    <main className="min-h-screen bg-[#e8eee9] text-[#173b35]">
-      <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-7 sm:px-10">
-        <Link href="/" className="text-sm font-semibold uppercase tracking-[0.2em] text-[#cf633f]">
-          Erg Master
-        </Link>
-        <div className="flex items-center gap-4">
-          <span className="hidden text-sm text-[#5b6d66] sm:inline">{session.user.email}</span>
-          <LogoutButton />
-        </div>
-      </nav>
-
       <section className="mx-auto w-full max-w-6xl px-6 py-16 sm:px-10 lg:py-24">
         <p className="mb-5 text-sm font-semibold uppercase tracking-[0.2em] text-[#cf633f]">Dashboard</p>
         <h1 className="max-w-2xl text-6xl font-semibold leading-[0.92] tracking-tight sm:text-8xl">
@@ -49,6 +36,5 @@ export default async function Page() {
           </div>
         </div>
       </section>
-    </main>
   );
 }
