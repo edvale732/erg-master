@@ -39,8 +39,13 @@ export type RowingSession = {
   workoutType: string;
   totalDistance: number;
   totalTimeSeconds: number;
+  targetPaceSeconds: number | null;
   avgStrokeRate: number | null;
+  targetStrokeRate: number | null;
   avgWatts: number | null;
+  dragFactor: number | null;
+  notes: string | null;
+  createdAt: string;
 };
 
 const getFormValue = (formData: FormData, field: string) => {
@@ -94,8 +99,13 @@ export async function getRowingSessions(): Promise<RowingSession[]> {
       workout_type AS "workoutType",
       total_distance AS "totalDistance",
       total_time_seconds AS "totalTimeSeconds",
+      target_pace_seconds AS "targetPaceSeconds",
       avg_stroke_rate AS "avgStrokeRate",
-      avg_watts AS "avgWatts"
+      target_stroke_rate AS "targetStrokeRate",
+      avg_watts AS "avgWatts",
+      drag_factor AS "dragFactor",
+      notes,
+      created_at::text AS "createdAt"
     FROM rowing_sessions
     WHERE user_id = ${userId}
     ORDER BY session_date DESC, created_at DESC
