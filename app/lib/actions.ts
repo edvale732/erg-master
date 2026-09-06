@@ -114,6 +114,31 @@ export async function getRowingSessions(): Promise<RowingSession[]> {
   return rows as RowingSession[];
 }
 
+export async function getRowingSession(id: string): Promise<RowingSession | null> {
+  const userId = await getAuthenticatedUserId();
+  if (!userId) return null;
+
+  const rows = await sql`
+    SELECT
+      id,
+      session_date::text AS "sessionDate",
+      workout_type AS "workoutType",
+      total_distance AS "totalDistance",
+      total_time_seconds AS "totalTimeSeconds",
+      target_pace_seconds AS "targetPaceSeconds",
+      avg_stroke_rate AS "avgStrokeRate",
+      target_stroke_rate AS "targetStrokeRate",
+      avg_watts AS "avgWatts",
+      drag_factor AS "dragFactor",
+      notes,
+      created_at::text AS "createdAt"
+    FROM rowing_sessions
+    WHERE id = ${id} AND user_id = ${userId}
+  `;
+
+  return (rows[0] as RowingSession | undefined) ?? null;
+}
+
 export async function createRowingSession(_prevState: State, formData: FormData) {
   const userId = await getAuthenticatedUserId();
   if (!userId) return { message: 'You must be signed in to create a rowing session.' };
@@ -241,7 +266,8 @@ export async function updateRowingSession(
   }
  
   revalidatePath('/dashboard');
-  redirect('/dashboard');
+  revalidatePath('/dashboard/history');
+  redirect('/dashboard/history');
 }
 
 export async function deleteRowingSession(id: string) {

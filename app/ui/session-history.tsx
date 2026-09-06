@@ -1,4 +1,5 @@
 import type { RowingSession } from "@/app/lib/actions";
+import Link from "next/link";
 
 const formatDuration = (totalTimeSeconds: number) => {
   const minutes = Math.floor(totalTimeSeconds / 60);
@@ -85,6 +86,12 @@ export default function SessionHistory({ sessions }: { sessions: RowingSession[]
               {session.notes}
             </p>
           )}
+          <Link
+            href={`/dashboard/edit-session/${session.id}`}
+            className="border-t border-[#dbe5dd] pt-4 text-sm font-semibold text-[#cf633f] transition-colors hover:text-[#b34e31] sm:col-span-2"
+          >
+            Edit session
+          </Link>
         </article>
       ))}
     </div>
