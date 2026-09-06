@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { auth } from "@/app/lib/auth";
+import { DashboardNav, ProfileNavLink } from "./dashboard-nav";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const session = await auth.api.getSession({
@@ -25,43 +26,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           >
             ErgMaster
           </Link>
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-base font-semibold text-[#c4d8ed] sm:justify-self-center">
-            <Link href="/dashboard" className="transition-colors hover:text-[#69b3ff]">
-              Home
-            </Link>
-            <Link href="/dashboard/progress" className="transition-colors hover:text-[#69b3ff]">
-              Progress
-            </Link>
-            <Link
-              href="/dashboard/log"
-              aria-label="Log session"
-              title="Log session"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#69b3ff] text-2xl leading-none transition-colors hover:bg-[#69b3ff] hover:text-[#071a33]"
-            >
-              <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-            </Link>
-            <Link href="/dashboard/workouts" className="transition-colors hover:text-[#69b3ff]">
-              Workouts
-            </Link>
-            <Link href="/dashboard/history" className="transition-colors hover:text-[#69b3ff]">
-              History
-            </Link>
-  
-          </div>
-          
-          <Link
-            href="/dashboard/profile"
-            aria-label="Profile"
-            className="flex items-center gap-2 text-base font-semibold text-[#f7fbff] transition-colors hover:text-[#69b3ff] sm:justify-self-end"
-          >
-            <svg aria-hidden="true" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6.75a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.25a7.5 7.5 0 0 1 15 0" />
-            </svg>
-            <span>Profile</span>
-          </Link>
-          
+          <DashboardNav />
+          <ProfileNavLink />
         </div>
       </nav>
 
