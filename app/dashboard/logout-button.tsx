@@ -31,7 +31,7 @@ export function LogoutButton() {
       onClick={handleLogout}
       disabled={isLoggingOut}
       aria-busy={isLoggingOut}
-      className="rounded-xl border border-[#173b35] px-5 py-2.5 text-sm font-semibold transition hover:bg-[#173b35] hover:text-white disabled:cursor-wait disabled:opacity-70"
+      className="rounded-xl border border-[#9db8d3] px-5 py-2.5 text-sm font-semibold transition hover:bg-[#f7fbff] hover:text-[#071a33] disabled:cursor-wait disabled:opacity-70"
     >
       {isLoggingOut ? (
         <span className="flex items-center gap-2">
