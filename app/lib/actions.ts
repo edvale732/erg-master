@@ -33,6 +33,21 @@ export type State = {
   message?: string | null;
 };
 
+export type RowingSession = {
+  id: string;
+  sessionDate: string;
+  workoutType: string;
+  totalDistance: number;
+  totalTimeSeconds: number;
+  targetPaceSeconds: number | null;
+  avgStrokeRate: number | null;
+  targetStrokeRate: number | null;
+  avgWatts: number | null;
+  dragFactor: number | null;
+  notes: string | null;
+  createdAt: string;
+};
+
 const getFormValue = (formData: FormData, field: string) => {
   const value = formData.get(field);
   return typeof value === 'string' ? value : null;
@@ -72,6 +87,57 @@ const getAuthenticatedUserId = async () => {
 
   return session?.user.id ?? null;
 };
+
+export async function getRowingSessions(): Promise<RowingSession[]> {
+  const userId = await getAuthenticatedUserId();
+  if (!userId) return [];
+
+  const rows = await sql`
+    SELECT
+      id,
+      session_date::text AS "sessionDate",
+      workout_type AS "workoutType",
+      total_distance AS "totalDistance",
+      total_time_seconds AS "totalTimeSeconds",
+      target_pace_seconds AS "targetPaceSeconds",
+      avg_stroke_rate AS "avgStrokeRate",
+      target_stroke_rate AS "targetStrokeRate",
+      avg_watts AS "avgWatts",
+      drag_factor AS "dragFactor",
+      notes,
+      created_at::text AS "createdAt"
+    FROM rowing_sessions
+    WHERE user_id = ${userId}
+    ORDER BY session_date DESC, created_at DESC
+  `;
+
+  return rows as RowingSession[];
+}
+
+export async function getRowingSession(id: string): Promise<RowingSession | null> {
+  const userId = await getAuthenticatedUserId();
+  if (!userId) return null;
+
+  const rows = await sql`
+    SELECT
+      id,
+      session_date::text AS "sessionDate",
+      workout_type AS "workoutType",
+      total_distance AS "totalDistance",
+      total_time_seconds AS "totalTimeSeconds",
+      target_pace_seconds AS "targetPaceSeconds",
+      avg_stroke_rate AS "avgStrokeRate",
+      target_stroke_rate AS "targetStrokeRate",
+      avg_watts AS "avgWatts",
+      drag_factor AS "dragFactor",
+      notes,
+      created_at::text AS "createdAt"
+    FROM rowing_sessions
+    WHERE id = ${id} AND user_id = ${userId}
+  `;
+
+  return (rows[0] as RowingSession | undefined) ?? null;
+}
 
 export async function createRowingSession(_prevState: State, formData: FormData) {
   const userId = await getAuthenticatedUserId();
@@ -200,7 +266,8 @@ export async function updateRowingSession(
   }
  
   revalidatePath('/dashboard');
-  redirect('/dashboard');
+  revalidatePath('/dashboard/history');
+  redirect('/dashboard/history');
 }
 
 export async function deleteRowingSession(id: string) {
