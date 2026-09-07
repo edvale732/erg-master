@@ -20,6 +20,13 @@ const inputClassName =
 
 type LogMode = "single-distance" | "single-time" | "timed-intervals" | "distance-intervals";
 
+const sessionTypeToLogMode: Record<NonNullable<RowingSessionWithIntervals["sessionType"]>, LogMode> = {
+  single_distance: "single-distance",
+  single_time: "single-time",
+  timed_intervals: "timed-intervals",
+  distance_intervals: "distance-intervals",
+};
+
 const getTimeParts = (timeSeconds?: number | null) => {
   const totalSeconds = timeSeconds ?? 0;
 
@@ -77,7 +84,7 @@ export default function LoggingForm({ session }: { session?: RowingSessionWithIn
   const [state, formAction, isPending] = useActionState(action, initialState);
   const [intervals, setIntervals] = useState<Partial<RowingInterval>[]>(session?.intervals ?? [{}]);
   const [timeInputs, setTimeInputs] = useState<string[]>(session?.intervals.map((interval) => formatTimeInput(interval.timeSeconds)) ?? [""]);
-  const [mode, setMode] = useState<LogMode>("distance-intervals");
+  const [mode, setMode] = useState<LogMode>(session ? sessionTypeToLogMode[session.sessionType] : "distance-intervals");
   const [isDeleting, startDeleting] = useTransition();
   const router = useRouter();
 
@@ -207,10 +214,10 @@ export default function LoggingForm({ session }: { session?: RowingSessionWithIn
                   Avg watts
                   <input className={`${inputClassName} max-w-[130px]`} type="number" placeholder="W" min="0" value={interval.avgWatts ?? ""} onChange={(event) => setIntervals((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, avgWatts: event.target.value ? Number(event.target.value) : null } : item))} />
                 </label>
-                <label className="text-xs font-semibold uppercase tracking-wide text-[#55708f]">
+                {!isSingle && <label className="text-xs font-semibold uppercase tracking-wide text-[#55708f]">
                   Rest
                   <input className={`${inputClassName} max-w-[130px]`} type="number" placeholder="sec" min="0" value={interval.restTimeSeconds ?? ""} onChange={(event) => setIntervals((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, restTimeSeconds: event.target.value ? Number(event.target.value) : null } : item))} />
-                </label>
+                </label>}
                 {!isSingle && <button type="button" className="mt-6 flex h-12 w-12 cursor-pointer items-center justify-center rounded-xl border border-[#d94c4c] text-[#d94c4c] transition-colors hover:bg-[#fff0f0] disabled:opacity-50" aria-label="Delete interval" title="Delete interval" disabled={isDeleting} onClick={() => removeInterval(index, interval.id)}>
                   <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M3 6h18" />

@@ -127,7 +127,11 @@ const revalidateSessionPaths = () => {
   revalidatePath('/dashboard/history');
 };
 
-const insertRowingIntervals = async (sessionId: string, intervals: z.infer<typeof RowingIntervalSchema>[]) => {
+const insertRowingIntervals = async (
+  sessionId: string,
+  sessionType: z.infer<typeof SessionTypeSchema>,
+  intervals: z.infer<typeof RowingIntervalSchema>[],
+) => {
   for (const interval of intervals) {
     await sql`
       INSERT INTO rowing_intervals (
@@ -135,7 +139,8 @@ const insertRowingIntervals = async (sessionId: string, intervals: z.infer<typeo
         avg_stroke_rate, avg_watts, rest_time_seconds
       ) VALUES (
         ${sessionId}, ${interval.intervalNumber}, ${interval.distance}, ${interval.timeSeconds},
-        ${interval.avgStrokeRate}, ${interval.avgWatts}, ${interval.restTimeSeconds}
+        ${interval.avgStrokeRate}, ${interval.avgWatts},
+        ${sessionType === 'single_distance' || sessionType === 'single_time' ? 0 : interval.restTimeSeconds}
       )
     `;
   }
@@ -265,7 +270,7 @@ export async function createRowingSession(_prevState: State, formData: FormData)
     `;
 
     const sessionId = sessions[0].id;
-    await insertRowingIntervals(sessionId, intervals.data);
+    await insertRowingIntervals(sessionId, sessionType, intervals.data);
   } catch (error) {
     console.error(error);
     return { message: 'Database error: Failed to create rowing session.' };
@@ -314,7 +319,7 @@ export async function updateRowingSession(
     `;
 
     await sql`DELETE FROM rowing_intervals WHERE rowing_session_id = ${id}`;
-    await insertRowingIntervals(id, intervals.data);
+    await insertRowingIntervals(id, sessionType, intervals.data);
   } catch (error) {
     console.error(error);
     return { message: 'Database error: Failed to update rowing session.' };
