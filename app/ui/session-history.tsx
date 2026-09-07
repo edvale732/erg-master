@@ -25,7 +25,17 @@ export default function SessionHistory({ sessions }: { sessions: RowingSessionWi
   }
 
   return (
-    <div className="mt-16 space-y-3">
+    <div className="mt-8 space-y-3">
+      <div className="hidden items-center gap-x-8 px-5 text-sm font-semibold uppercase tracking-[0.15em] text-[#a9bfd7] sm:flex">
+        <div className="shrink-0 sm:w-[12.5rem]">Workout</div>
+        <div className="flex min-w-0 flex-1 gap-x-6">
+          <span className="flex-1">Distance</span>
+          <span className="flex-1">Time</span>
+          <span className="flex-1">Pace / 500 m</span>
+          <span className="flex-1">Intervals</span>
+        </div>
+        <div className="h-10 w-10 shrink-0" />
+      </div>
       {sessions.map((session) => (
         (() => {
           const totalDistance = session.intervals.reduce((sum, interval) => sum + interval.distance, 0);
@@ -39,7 +49,7 @@ export default function SessionHistory({ sessions }: { sessions: RowingSessionWi
           key={session.id}
           className="flex flex-wrap items-center gap-x-8 gap-y-4 rounded-2xl bg-[#f7fbff] p-4 text-[#071a33] shadow-[0_16px_50px_rgba(0,0,0,0.2)] transition-shadow hover:shadow-[0_18px_55px_rgba(0,0,0,0.26)] sm:flex-nowrap sm:p-5"
         >
-          <div className="shrink-0">
+          <div className="shrink-0 sm:w-[12.5rem]">
             <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#1f6fd1]">
               {new Date(`${session.sessionDate}T00:00:00`).toLocaleDateString(undefined, {
                 year: "numeric",
@@ -50,20 +60,16 @@ export default function SessionHistory({ sessions }: { sessions: RowingSessionWi
             <h2 className="mt-1 text-xl font-semibold text-[#071a33]">{title}</h2>
           </div>
           <dl className="flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-3 text-sm">
-            <div>
-              <dt className="text-[#55708f]">Distance</dt>
+            <div className="flex-1">
               <dd className="font-semibold text-[#36584f]">{totalDistance.toLocaleString()} m</dd>
             </div>
-            <div>
-              <dt className="text-[#55708f]">Time</dt>
+            <div className="flex-1">
               <dd className="font-semibold text-[#36584f]">{formatDuration(totalTimeSeconds)}</dd>
             </div>
-            <div>
-              <dt className="text-[#55708f]">Average pace / 500 m</dt>
+            <div className="flex-1">
               <dd className="font-semibold text-[#36584f]">{formatPace(totalTimeSeconds, totalDistance)}</dd>
             </div>
-            <div>
-              <dt className="text-[#55708f]">Total intervals</dt>
+            <div className="flex-1">
               <dd className="font-semibold text-[#36584f]">{session.intervals.length}</dd>
             </div>
           </dl>
