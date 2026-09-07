@@ -183,20 +183,39 @@ export async function getPaginatedRowingSessions(page: number, pageSize = 10): P
 
   const rows = await sql`
     SELECT
-      id,
-      session_date::text AS "sessionDate",
-      notes,
-      created_at::text AS "createdAt"
-    FROM rowing_sessions
-    WHERE user_id = ${userId}
-    ORDER BY session_date DESC, created_at DESC
-    LIMIT ${pageSize} OFFSET ${offset}
+      paged_sessions.id,
+      paged_sessions.session_date::text AS "sessionDate",
+      paged_sessions.notes,
+      paged_sessions.created_at::text AS "createdAt",
+      COALESCE(
+        json_agg(
+          json_build_object(
+            'id', i.id,
+            'rowingSessionId', i.rowing_session_id,
+            'intervalNumber', i.interval_number,
+            'distance', i.distance,
+            'timeSeconds', i.time_seconds,
+            'avgStrokeRate', i.avg_stroke_rate,
+            'avgWatts', i.avg_watts,
+            'restTimeSeconds', i.rest_time_seconds,
+            'createdAt', i.created_at::text
+          ) ORDER BY i.interval_number
+        ) FILTER (WHERE i.id IS NOT NULL),
+        '[]'::json
+      ) AS intervals
+    FROM (
+      SELECT id, session_date, notes, created_at
+      FROM rowing_sessions
+      WHERE user_id = ${userId}
+      ORDER BY session_date DESC, created_at DESC
+      LIMIT ${pageSize} OFFSET ${offset}
+    ) AS paged_sessions
+    LEFT JOIN rowing_intervals i ON i.rowing_session_id = paged_sessions.id
+    GROUP BY paged_sessions.id, paged_sessions.session_date, paged_sessions.notes, paged_sessions.created_at
+    ORDER BY paged_sessions.session_date DESC, paged_sessions.created_at DESC
   `;
 
-  const sessions = await Promise.all((rows as RowingSession[]).map(async (session) => ({
-    ...session,
-    intervals: await getRowingIntervals(session.id),
-  })));
+  const sessions = rows as RowingSessionWithIntervals[];
 
   return { sessions, currentPage, totalPages };
 }
