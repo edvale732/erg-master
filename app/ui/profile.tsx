@@ -1,7 +1,6 @@
 import { headers } from "next/headers";
 import { auth } from "@/app/lib/auth";
 import { getRowingSessionsWithIntervals } from "@/app/lib/actions";
-import { LogoutButton } from "@/app/dashboard/logout-button";
 
 const formatDistance = (distance: number) => `${(distance / 1000).toFixed(1)} km`;
 
@@ -26,17 +25,7 @@ export default async function Profile() {
     : "Not available";
 
   return (
-    <section className="mx-auto w-full max-w-6xl px-6 py-16 sm:px-10 lg:py-24">
-      <div className="flex flex-col gap-8 border-b border-[#2d4e73] pb-10 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="mb-5 text-sm font-semibold uppercase tracking-[0.2em] text-[#69b3ff]">Profile</p>
-          <h1 className="max-w-2xl text-5xl font-semibold leading-[0.95] tracking-tight sm:text-7xl">Your training, in one place.</h1>
-          <p className="mt-8 max-w-xl text-xl leading-8 text-[#a9bfd7]">Keep an eye on your account and the work you have put in.</p>
-        </div>
-        <LogoutButton />
-      </div>
-
-      <div className="mt-12 grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+    <div className="mt-12 grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
         <section className="rounded-2xl bg-[#f7fbff] p-7 text-[#071a33] shadow-[0_16px_50px_rgba(0,0,0,0.2)]" aria-labelledby="account-details-heading">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#1f6fd1]">Account</p>
           <h2 id="account-details-heading" className="mt-3 text-2xl font-semibold">Account details</h2>
@@ -82,7 +71,6 @@ export default async function Profile() {
             </div>
           </div>
         </section>
-      </div>
-    </section>
+    </div>
   );
 }
