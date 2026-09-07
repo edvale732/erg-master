@@ -28,11 +28,11 @@ export default function SessionHistory({ sessions }: { sessions: RowingSessionWi
     <div className="space-y-3">
       {sessions.map((session) => (
         (() => {
-          const totalDistance = session.intervals.reduce((sum, interval) => sum + interval.distance, 0);
-          const totalTimeSeconds = session.intervals.reduce((sum, interval) => sum + interval.timeSeconds, 0);
+          const totalDistance = session.intervals.reduce((sum, interval) => sum + (interval.distance ?? 0), 0);
+          const totalTimeSeconds = session.intervals.reduce((sum, interval) => sum + (interval.timeSeconds ?? 0), 0);
           const title = session.intervals.length === 1
             ? `${totalDistance.toLocaleString()} m`
-            : `${session.intervals.length} x ${session.intervals[0]?.distance.toLocaleString() ?? 0} m`;
+            : `${session.intervals.length} x ${(session.intervals[0]?.distance ?? 0).toLocaleString()} m`;
           return (
         <Link
           href={`/dashboard/edit-session/${session.id}`}
