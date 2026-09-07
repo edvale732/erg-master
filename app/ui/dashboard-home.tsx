@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { getRowingSessions } from "@/app/lib/actions";
+import { getRowingSessionsWithIntervals } from "@/app/lib/actions";
 import { auth } from "@/app/lib/auth";
 
 const WEEKS_TO_DISPLAY = 8;
@@ -17,7 +17,7 @@ const startOfWeek = (date: Date) => {
 const dateKey = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
-const getWeeklyStreak = (sessions: Awaited<ReturnType<typeof getRowingSessions>>) => {
+const getWeeklyStreak = (sessions: Awaited<ReturnType<typeof getRowingSessionsWithIntervals>>) => {
   const activeWeeks = new Set(
     sessions.map((session) => dateKey(startOfWeek(new Date(`${session.sessionDate.slice(0, 10)}T00:00:00`)))),
   );
@@ -35,7 +35,7 @@ const getWeeklyStreak = (sessions: Awaited<ReturnType<typeof getRowingSessions>>
   return streak;
 };
 
-const getWeeklyActivity = (sessions: Awaited<ReturnType<typeof getRowingSessions>>) => {
+const getWeeklyActivity = (sessions: Awaited<ReturnType<typeof getRowingSessionsWithIntervals>>) => {
   const currentWeek = startOfWeek(new Date());
   const activity = Array.from({ length: WEEKS_TO_DISPLAY }, (_, index) => {
     const date = new Date(currentWeek);
@@ -47,7 +47,7 @@ const getWeeklyActivity = (sessions: Awaited<ReturnType<typeof getRowingSessions
   for (const session of sessions) {
     const sessionWeek = startOfWeek(new Date(`${session.sessionDate.slice(0, 10)}T00:00:00`));
     const week = activityByDate.get(dateKey(sessionWeek));
-    if (week) week.minutes += Math.round(session.totalTimeSeconds / 60);
+    if (week) week.minutes += Math.round(session.intervals.reduce((sum, interval) => sum + interval.timeSeconds, 0) / 60);
   }
 
   return activity;
@@ -64,7 +64,7 @@ export default async function DashboardHome() {
     redirect("/login");
   }
 
-  const sessions = await getRowingSessions();
+  const sessions = await getRowingSessionsWithIntervals();
   const weeklyStreak = getWeeklyStreak(sessions);
   const weeklyActivity = getWeeklyActivity(sessions);
   const maxActivity = Math.max(...weeklyActivity.map((week) => week.minutes), 1);

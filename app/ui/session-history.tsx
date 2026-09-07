@@ -1,4 +1,4 @@
-import type { RowingSession } from "@/app/lib/actions";
+import type { RowingSessionWithIntervals } from "@/app/lib/actions";
 import Link from "next/link";
 
 const formatDuration = (totalTimeSeconds: number) => {
@@ -8,18 +8,13 @@ const formatDuration = (totalTimeSeconds: number) => {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 };
 
-const formatOptionalDuration = (totalTimeSeconds: number | null) =>
-  totalTimeSeconds === null ? "-" : formatDuration(totalTimeSeconds);
-
-const formatDistance = (totalDistance: number) => `${totalDistance.toLocaleString()} m`;
-
 const formatCreatedAt = (createdAt: string) =>
   new Date(createdAt).toLocaleString(undefined, {
     dateStyle: "medium",
     timeStyle: "short",
   });
 
-export default function SessionHistory({ sessions }: { sessions: RowingSession[] }) {
+export default function SessionHistory({ sessions }: { sessions: RowingSessionWithIntervals[] }) {
   if (sessions.length === 0) {
     return (
       <div className="mt-16 rounded-2xl bg-[#f7fbff] p-8 text-[#071a33] shadow-[0_16px_50px_rgba(0,0,0,0.2)]">
@@ -32,6 +27,10 @@ export default function SessionHistory({ sessions }: { sessions: RowingSession[]
   return (
     <div className="mt-16 space-y-3">
       {sessions.map((session) => (
+        (() => {
+          const totalDistance = session.intervals.reduce((sum, interval) => sum + interval.distance, 0);
+          const totalTimeSeconds = session.intervals.reduce((sum, interval) => sum + interval.timeSeconds, 0);
+          return (
         <article
           key={session.id}
           className="grid gap-4 rounded-2xl bg-[#f7fbff] p-6 text-[#071a33] shadow-[0_16px_50px_rgba(0,0,0,0.2)] sm:grid-cols-[1fr_auto] sm:items-center"
@@ -44,36 +43,24 @@ export default function SessionHistory({ sessions }: { sessions: RowingSession[]
                 day: "numeric",
               })}
             </p>
-            <h2 className="mt-2 text-2xl font-semibold text-[#071a33]">{session.workoutType}</h2>
+            <h2 className="mt-2 text-2xl font-semibold text-[#071a33]">
+              {session.intervals.length} {session.intervals.length === 1 ? "interval" : "intervals"}
+            </h2>
           </div>
           <dl className="grid gap-x-5 gap-y-4 text-sm sm:grid-cols-3 sm:text-right">
             <div>
               <dt className="text-[#55708f]">Distance</dt>
-              <dd className="mt-1 font-semibold text-[#36584f]">{formatDistance(session.totalDistance)}</dd>
+              <dd className="mt-1 font-semibold text-[#36584f]">{totalDistance.toLocaleString()} m</dd>
             </div>
             <div>
               <dt className="text-[#55708f]">Time</dt>
-              <dd className="mt-1 font-semibold text-[#36584f]">{formatDuration(session.totalTimeSeconds)}</dd>
+              <dd className="mt-1 font-semibold text-[#36584f]">{formatDuration(totalTimeSeconds)}</dd>
             </div>
             <div>
               <dt className="text-[#55708f]">Avg watts</dt>
-              <dd className="mt-1 font-semibold text-[#36584f]">{session.avgWatts ?? "-"}</dd>
-            </div>
-            <div>
-              <dt className="text-[#55708f]">Target pace</dt>
-              <dd className="mt-1 font-semibold text-[#36584f]">{formatOptionalDuration(session.targetPaceSeconds)}</dd>
-            </div>
-            <div>
-              <dt className="text-[#55708f]">Avg stroke rate</dt>
-              <dd className="mt-1 font-semibold text-[#36584f]">{session.avgStrokeRate ?? "-"} spm</dd>
-            </div>
-            <div>
-              <dt className="text-[#55708f]">Target stroke rate</dt>
-              <dd className="mt-1 font-semibold text-[#36584f]">{session.targetStrokeRate ?? "-"} spm</dd>
-            </div>
-            <div>
-              <dt className="text-[#55708f]">Drag factor</dt>
-              <dd className="mt-1 font-semibold text-[#36584f]">{session.dragFactor ?? "-"}</dd>
+              <dd className="mt-1 font-semibold text-[#36584f]">
+                {session.intervals.length === 0 ? "-" : Math.round(session.intervals.reduce((sum, interval) => sum + (interval.avgWatts ?? 0), 0) / session.intervals.filter((interval) => interval.avgWatts !== null).length) || "-"}
+              </dd>
             </div>
             <div>
               <dt className="text-[#55708f]">Logged</dt>
@@ -93,6 +80,8 @@ export default function SessionHistory({ sessions }: { sessions: RowingSession[]
             Edit session
           </Link>
         </article>
+          );
+        })()
       ))}
     </div>
   );

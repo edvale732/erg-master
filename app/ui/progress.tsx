@@ -1,4 +1,4 @@
-import { getRowingSessions } from "@/app/lib/actions";
+import { getRowingSessionsWithIntervals } from "@/app/lib/actions";
 
 const WEEK_COUNT = 8;
 
@@ -19,7 +19,7 @@ const dateKey = (date: Date) =>
 const formatDistance = (distance: number) =>
   distance >= 1000 ? `${(distance / 1000).toFixed(1)} km` : `${distance.toLocaleString()} m`;
 
-const getStreakStats = (sessions: Awaited<ReturnType<typeof getRowingSessions>>): StreakStats => {
+const getStreakStats = (sessions: Awaited<ReturnType<typeof getRowingSessionsWithIntervals>>): StreakStats => {
   const sessionDays = new Set(sessions.map((session) => session.sessionDate.slice(0, 10)));
   const dates = [...sessionDays].sort();
   let longest = 0;
@@ -54,7 +54,7 @@ const getStreakStats = (sessions: Awaited<ReturnType<typeof getRowingSessions>>)
   return { current, longest, activeDays: sessionDays.size };
 };
 
-const getWeeks = (sessions: Awaited<ReturnType<typeof getRowingSessions>>): Week[] => {
+const getWeeks = (sessions: Awaited<ReturnType<typeof getRowingSessionsWithIntervals>>): Week[] => {
   const currentWeek = startOfWeek(new Date());
   const weeks = Array.from({ length: WEEK_COUNT }, (_, index) => {
     const start = new Date(currentWeek);
@@ -66,14 +66,14 @@ const getWeeks = (sessions: Awaited<ReturnType<typeof getRowingSessions>>): Week
   for (const session of sessions) {
     const sessionWeek = startOfWeek(new Date(`${session.sessionDate.slice(0, 10)}T00:00:00`));
     const week = weeksByStart.get(dateKey(sessionWeek));
-    if (week) week.distance += session.totalDistance;
+    if (week) week.distance += session.intervals.reduce((sum, interval) => sum + interval.distance, 0);
   }
 
   return weeks;
 };
 
 export default async function Progress() {
-  const sessions = await getRowingSessions();
+  const sessions = await getRowingSessionsWithIntervals();
   const weeks = getWeeks(sessions);
   const streaks = getStreakStats(sessions);
   const totalDistance = weeks.reduce((sum, week) => sum + week.distance, 0);

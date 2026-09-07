@@ -1,9 +1,9 @@
-import { getRowingSessions } from "@/app/lib/actions";
+import { getRowingSessionsWithIntervals } from "@/app/lib/actions";
 import SessionHistory from "@/app/ui/session-history";
 import { Suspense } from 'react';
 
 export default async function Page() {
-  const sessions = await getRowingSessions();
+  const sessions = await getRowingSessionsWithIntervals();
 
   return (
     <section className="mx-auto w-full max-w-6xl px-6 py-16 sm:px-10 lg:py-24">
