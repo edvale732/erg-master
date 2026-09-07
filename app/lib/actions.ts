@@ -7,15 +7,11 @@ import { headers } from 'next/headers';
 import { neon } from '@neondatabase/serverless';
 import { auth } from '@/app/lib/auth';
 
-
 const sql = neon(`${process.env.DATABASE_URL}`);
 
-const RowingSessionSchema = z.object({
-  id: z.uuid(),
-  userId: z.string({error: 'User is required'}).min(1, {error: 'User is required'}),
+const RowingSessionFieldsSchema = z.object({
   sessionDate: z.string({error: 'Session date is required'}),
   notes: z.string().nullable(),
-  createdAt: z.string({error: 'Creation date is required'})
 });
 
 const RowingIntervalSchema = z.object({
@@ -27,7 +23,9 @@ const RowingIntervalSchema = z.object({
   restTimeSeconds: z.number().int().gte(0).nullish().transform((value) => value ?? null),
 });
  
-const CreateRowingSession = RowingSessionSchema.omit({ id: true, createdAt: true });
+const CreateRowingSession = RowingSessionFieldsSchema.extend({
+  userId: z.string({error: 'User is required'}).min(1, {error: 'User is required'}),
+});
 
 export type State = {
   errors?: Record<string, string[] | undefined>;
@@ -83,8 +81,7 @@ const getIntervalsFormValue = (formData: FormData) => {
   }
 };
 
-const parseRowingSessionForm = (formData: FormData, userId: string) => ({
-  userId,
+const parseRowingSessionForm = (formData: FormData) => ({
   sessionDate: getFormValue(formData, 'sessionDate'),
   notes: getOptionalTextFormValue(formData, 'notes'),
 });
@@ -97,96 +94,45 @@ const getAuthenticatedUserId = async () => {
   return session?.user.id ?? null;
 };
 
-export async function getRowingSessions(): Promise<RowingSession[]> {
-  const userId = await getAuthenticatedUserId();
-  if (!userId) return [];
+const revalidateSessionPaths = () => {
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/history');
+};
 
+const insertRowingIntervals = async (sessionId: string, intervals: z.infer<typeof RowingIntervalSchema>[]) => {
+  for (const interval of intervals) {
+    await sql`
+      INSERT INTO rowing_intervals (
+        rowing_session_id, interval_number, distance, time_seconds,
+        avg_stroke_rate, avg_watts, rest_time_seconds
+      ) VALUES (
+        ${sessionId}, ${interval.intervalNumber}, ${interval.distance}, ${interval.timeSeconds},
+        ${interval.avgStrokeRate}, ${interval.avgWatts}, ${interval.restTimeSeconds}
+      )
+    `;
+  }
+};
+
+const getRowingSessionsWithIntervalsForUser = async (
+  userId: string,
+  options: { sessionId?: string; page?: number; pageSize?: number } = {},
+): Promise<RowingSessionWithIntervals[]> => {
+  const { sessionId, page, pageSize } = options;
+  const offset = page !== undefined && pageSize !== undefined ? (page - 1) * pageSize : 0;
   const rows = await sql`
+    WITH filtered_sessions AS (
+      SELECT id, session_date, notes, created_at
+      FROM rowing_sessions
+      WHERE user_id = ${userId}
+        AND (${sessionId === undefined} OR id = ${sessionId ?? null})
+      ORDER BY session_date DESC, created_at DESC
+      LIMIT ${pageSize ?? null} OFFSET ${offset}
+    )
     SELECT
-      id,
-      session_date::text AS "sessionDate",
-      notes,
-      created_at::text AS "createdAt"
-    FROM rowing_sessions
-    WHERE user_id = ${userId}
-    ORDER BY session_date DESC, created_at DESC
-  `;
-
-  return rows as RowingSession[];
-}
-
-export async function getRowingSession(id: string): Promise<RowingSessionWithIntervals | null> {
-  const userId = await getAuthenticatedUserId();
-  if (!userId) return null;
-
-  const rows = await sql`
-    SELECT
-      id,
-      session_date::text AS "sessionDate",
-      notes,
-      created_at::text AS "createdAt"
-    FROM rowing_sessions
-    WHERE id = ${id} AND user_id = ${userId}
-  `;
-
-  const session = rows[0] as RowingSession | undefined;
-  return session ? { ...session, intervals: await getRowingIntervals(session.id) } : null;
-}
-
-export async function getRowingIntervals(sessionId: string): Promise<RowingInterval[]> {
-  const userId = await getAuthenticatedUserId();
-  if (!userId) return [];
-
-  const rows = await sql`
-    SELECT
-      i.id,
-      i.rowing_session_id AS "rowingSessionId",
-      i.interval_number AS "intervalNumber",
-      i.distance,
-      i.time_seconds AS "timeSeconds",
-      i.avg_stroke_rate AS "avgStrokeRate",
-      i.avg_watts AS "avgWatts",
-      i.rest_time_seconds AS "restTimeSeconds",
-      i.created_at::text AS "createdAt"
-    FROM rowing_intervals i
-    INNER JOIN rowing_sessions s ON s.id = i.rowing_session_id
-    WHERE i.rowing_session_id = ${sessionId} AND s.user_id = ${userId}
-    ORDER BY i.interval_number ASC
-  `;
-
-  return rows as RowingInterval[];
-}
-
-export async function getRowingSessionsWithIntervals(): Promise<RowingSessionWithIntervals[]> {
-  const sessions = await getRowingSessions();
-  return Promise.all(sessions.map(async (session) => ({
-    ...session,
-    intervals: await getRowingIntervals(session.id),
-  })));
-}
-
-export async function getPaginatedRowingSessions(page: number, pageSize = 10): Promise<PaginatedRowingSessions> {
-  const userId = await getAuthenticatedUserId();
-  if (!userId) return { sessions: [], currentPage: 1, totalPages: 0 };
-
-  const countRows = await sql`
-    SELECT COUNT(*)::int AS count
-    FROM rowing_sessions
-    WHERE user_id = ${userId}
-  `;
-  const totalSessions = Number(countRows[0]?.count ?? 0);
-  const totalPages = Math.ceil(totalSessions / pageSize);
-  const currentPage = totalPages === 0
-    ? 1
-    : Math.min(Math.max(Math.floor(page), 1), totalPages);
-  const offset = (currentPage - 1) * pageSize;
-
-  const rows = await sql`
-    SELECT
-      paged_sessions.id,
-      paged_sessions.session_date::text AS "sessionDate",
-      paged_sessions.notes,
-      paged_sessions.created_at::text AS "createdAt",
+      s.id,
+      s.session_date::text AS "sessionDate",
+      s.notes,
+      s.created_at::text AS "createdAt",
       COALESCE(
         json_agg(
           json_build_object(
@@ -203,19 +149,45 @@ export async function getPaginatedRowingSessions(page: number, pageSize = 10): P
         ) FILTER (WHERE i.id IS NOT NULL),
         '[]'::json
       ) AS intervals
-    FROM (
-      SELECT id, session_date, notes, created_at
-      FROM rowing_sessions
-      WHERE user_id = ${userId}
-      ORDER BY session_date DESC, created_at DESC
-      LIMIT ${pageSize} OFFSET ${offset}
-    ) AS paged_sessions
-    LEFT JOIN rowing_intervals i ON i.rowing_session_id = paged_sessions.id
-    GROUP BY paged_sessions.id, paged_sessions.session_date, paged_sessions.notes, paged_sessions.created_at
-    ORDER BY paged_sessions.session_date DESC, paged_sessions.created_at DESC
+    FROM filtered_sessions s
+    LEFT JOIN rowing_intervals i ON i.rowing_session_id = s.id
+    GROUP BY s.id, s.session_date, s.notes, s.created_at
+    ORDER BY s.session_date DESC, s.created_at DESC
   `;
 
-  const sessions = rows as RowingSessionWithIntervals[];
+  return rows as RowingSessionWithIntervals[];
+};
+
+export async function getRowingSession(id: string): Promise<RowingSessionWithIntervals | null> {
+  const userId = await getAuthenticatedUserId();
+  if (!userId) return null;
+
+  const sessions = await getRowingSessionsWithIntervalsForUser(userId, { sessionId: id });
+  return sessions[0] ?? null;
+}
+
+export async function getRowingSessionsWithIntervals(): Promise<RowingSessionWithIntervals[]> {
+  const userId = await getAuthenticatedUserId();
+  if (!userId) return [];
+
+  return getRowingSessionsWithIntervalsForUser(userId);
+}
+
+export async function getPaginatedRowingSessions(page: number, pageSize = 10): Promise<PaginatedRowingSessions> {
+  const userId = await getAuthenticatedUserId();
+  if (!userId) return { sessions: [], currentPage: 1, totalPages: 0 };
+
+  const countRows = await sql`
+    SELECT COUNT(*)::int AS count
+    FROM rowing_sessions
+    WHERE user_id = ${userId}
+  `;
+  const totalSessions = Number(countRows[0]?.count ?? 0);
+  const totalPages = Math.ceil(totalSessions / pageSize);
+  const currentPage = totalPages === 0
+    ? 1
+    : Math.min(Math.max(Math.floor(page), 1), totalPages);
+  const sessions = await getRowingSessionsWithIntervalsForUser(userId, { page: currentPage, pageSize });
 
   return { sessions, currentPage, totalPages };
 }
@@ -224,9 +196,10 @@ export async function createRowingSession(_prevState: State, formData: FormData)
   const userId = await getAuthenticatedUserId();
   if (!userId) return { message: 'You must be signed in to create a rowing session.' };
 
-  const validatedFields = CreateRowingSession.safeParse(
-    parseRowingSessionForm(formData, userId),
-  );
+  const validatedFields = CreateRowingSession.safeParse({
+    ...parseRowingSessionForm(formData),
+    userId,
+  });
 
   if (!validatedFields.success) {
     return {
@@ -260,17 +233,7 @@ export async function createRowingSession(_prevState: State, formData: FormData)
     `;
 
     const sessionId = sessions[0].id;
-    for (const interval of intervals.data) {
-      await sql`
-        INSERT INTO rowing_intervals (
-          rowing_session_id, interval_number, distance, time_seconds,
-          avg_stroke_rate, avg_watts, rest_time_seconds
-        ) VALUES (
-          ${sessionId}, ${interval.intervalNumber}, ${interval.distance}, ${interval.timeSeconds},
-          ${interval.avgStrokeRate}, ${interval.avgWatts}, ${interval.restTimeSeconds}
-        )
-      `;
-    }
+    await insertRowingIntervals(sessionId, intervals.data);
   } catch (error) {
     console.error(error);
     return { message: 'Database error: Failed to create rowing session.' };
@@ -280,12 +243,6 @@ export async function createRowingSession(_prevState: State, formData: FormData)
   redirect('/dashboard');
 }
 
-const UpdateRowingSession = RowingSessionSchema.omit({
-  id: true,
-  userId: true,
-  createdAt: true,
-});
-
 export async function updateRowingSession(
   id: string,
   prevState: State,
@@ -294,8 +251,8 @@ export async function updateRowingSession(
   const userId = await getAuthenticatedUserId();
   if (!userId) return { message: 'You must be signed in to update a rowing session.' };
 
-  const validatedFields = UpdateRowingSession.safeParse(
-    parseRowingSessionForm(formData, userId),
+  const validatedFields = RowingSessionFieldsSchema.safeParse(
+    parseRowingSessionForm(formData),
   );
  
   if (!validatedFields.success) {
@@ -323,24 +280,13 @@ export async function updateRowingSession(
     `;
 
     await sql`DELETE FROM rowing_intervals WHERE rowing_session_id = ${id}`;
-    for (const interval of intervals.data) {
-      await sql`
-        INSERT INTO rowing_intervals (
-          rowing_session_id, interval_number, distance, time_seconds,
-          avg_stroke_rate, avg_watts, rest_time_seconds
-        ) VALUES (
-          ${id}, ${interval.intervalNumber}, ${interval.distance}, ${interval.timeSeconds},
-          ${interval.avgStrokeRate}, ${interval.avgWatts}, ${interval.restTimeSeconds}
-        )
-      `;
-    }
+    await insertRowingIntervals(id, intervals.data);
   } catch (error) {
     console.error(error);
     return { message: 'Database error: Failed to update rowing session.' };
   }
  
-  revalidatePath('/dashboard');
-  revalidatePath('/dashboard/history');
+  revalidateSessionPaths();
   redirect('/dashboard/history');
 }
 
@@ -366,8 +312,7 @@ export async function deleteRowingSession(id: string) {
     return { message: 'Database error: Failed to delete rowing session.' };
   }
 
-  revalidatePath('/dashboard');
-  revalidatePath('/dashboard/history');
+  revalidateSessionPaths();
   redirect('/dashboard/history');
 }
 
@@ -390,6 +335,5 @@ export async function deleteRowingInterval(intervalId: string) {
     return { message: 'Database error: Failed to delete rowing interval.' };
   }
 
-  revalidatePath('/dashboard');
-  revalidatePath('/dashboard/history');
+  revalidateSessionPaths();
 }
