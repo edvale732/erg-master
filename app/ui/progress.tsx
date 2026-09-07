@@ -72,7 +72,7 @@ const getWeeks = (sessions: Awaited<ReturnType<typeof getRowingSessionsWithInter
   return weeks;
 };
 
-export default async function Progress() {
+export default async function ProgressWidgets() {
   const sessions = await getRowingSessionsWithIntervals();
   const weeks = getWeeks(sessions);
   const streaks = getStreakStats(sessions);
@@ -91,17 +91,13 @@ export default async function Progress() {
   const areaPoints = `${chartLeft},${chartBottom} ${linePoints} ${chartRight},${chartBottom}`;
 
   return (
-    <section className="mx-auto w-full max-w-6xl px-6 py-16 sm:px-10 lg:py-24">
-      <p className="mb-5 text-sm font-semibold uppercase tracking-[0.2em] text-[#69b3ff]">Progress</p>
-      <h1 className="max-w-2xl text-5xl font-semibold leading-[0.95] tracking-tight sm:text-7xl">See how your training is moving.</h1>
-      <p className="mt-8 max-w-xl text-xl leading-8 text-[#a9bfd7]">A clear view of the distance you have rowed each week.</p>
-
-      <div className="mt-14 grid gap-5 sm:grid-cols-2">
-        <div className="rounded-2xl bg-[#0d3b66] p-6 text-[#f7fbff]"><p className="text-sm text-[#b5d3ef]">This week</p><p className="mt-6 text-4xl font-semibold">{formatDistance(currentWeek.distance)}</p><p className="mt-2 text-sm text-[#dceeff]">rowing distance</p></div>
-        <div className="rounded-2xl bg-[#f7fbff] p-6 text-[#071a33] shadow-[0_16px_50px_rgba(0,0,0,0.2)]"><p className="text-sm text-[#55708f]">Last eight weeks</p><p className="mt-6 text-4xl font-semibold text-[#071a33]">{formatDistance(totalDistance)}</p><p className="mt-2 text-sm text-[#55708f]">total distance rowed</p></div>
+    <div className="mt-14">
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div className="h-36 rounded-2xl bg-[#0d3b66] p-6 text-[#f7fbff]"><p className="text-sm text-[#b5d3ef]">This week</p><p className="mt-6 text-4xl font-semibold">{formatDistance(currentWeek.distance)}</p><p className="mt-2 text-sm text-[#dceeff]">rowing distance</p></div>
+        <div className="h-36 rounded-2xl bg-[#f7fbff] p-6 text-[#071a33] shadow-[0_16px_50px_rgba(0,0,0,0.2)]"><p className="text-sm text-[#55708f]">Last eight weeks</p><p className="mt-6 text-4xl font-semibold text-[#071a33]">{formatDistance(totalDistance)}</p><p className="mt-2 text-sm text-[#55708f]">total distance rowed</p></div>
       </div>
 
-      <section className="mt-5 rounded-2xl bg-[#e4f1fc] p-6 text-[#071a33] sm:p-8" aria-labelledby="streaks-heading">
+      <section className="mt-5 h-72 rounded-2xl bg-[#e4f1fc] p-6 text-[#071a33] sm:p-8" aria-labelledby="streaks-heading">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-lg font-semibold" id="streaks-heading">Streaks</p>
@@ -123,7 +119,7 @@ export default async function Progress() {
         </div>
       </section>
 
-      <figure className="mt-5 rounded-2xl bg-[#f7fbff] p-6 text-[#071a33] shadow-[0_16px_50px_rgba(0,0,0,0.2)] sm:p-8">
+      <figure className="mt-5 min-h-96 rounded-2xl bg-[#f7fbff] p-6 text-[#071a33] shadow-[0_16px_50px_rgba(0,0,0,0.2)] sm:p-8">
         <figcaption className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-lg font-semibold text-[#071a33]">Weekly distance</p><p className="mt-1 text-sm text-[#55708f]">Meters rowed, Monday through Sunday</p></div><p className="text-sm font-semibold text-[#1f6fd1]">{sessions.length} {sessions.length === 1 ? "session" : "sessions"}</p></figcaption>
         {sessions.length === 0 ? <div className="mt-10 flex min-h-56 items-center justify-center rounded-xl border border-dashed border-[#9db8d3] px-6 text-center text-[#55708f]">Your weekly distance will appear here after your first logged session.</div> : <div className="mt-10" role="img" aria-label="Line chart showing rowing distance for the last eight weeks">
           <svg className="h-auto w-full" viewBox="0 0 800 280" preserveAspectRatio="none" aria-hidden="true">
@@ -140,6 +136,6 @@ export default async function Progress() {
           </div>
         </div>}
       </figure>
-    </section>
+    </div>
   );
 }
