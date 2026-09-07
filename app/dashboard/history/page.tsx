@@ -3,6 +3,13 @@ import Pagination from "@/app/ui/pagination";
 import SessionHistory from "@/app/ui/session-history";
 import { Suspense } from 'react';
 
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "History",
+  description: "View your rowing session history in ErgMaster"
+};
+
 export default async function Page({
   searchParams,
 }: {

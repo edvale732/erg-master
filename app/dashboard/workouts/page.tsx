@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Workouts",
+  description: "View your saved workouts and training plans in ErgMaster"
+};
+
 export default function Page() {
   return (
     <section className="mx-auto w-full max-w-6xl px-6 py-16 sm:px-10 lg:py-24">

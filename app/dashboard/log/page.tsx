@@ -1,5 +1,12 @@
 import LoggingForm from "@/app/ui/logging-form";
 
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Log",
+  description: "Log your activities in ErgMaster"
+};
+
 export default function Page() {
   return (
     <section className="mx-auto w-full max-w-6xl px-6 py-16 sm:px-10 lg:py-24">
