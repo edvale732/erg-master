@@ -9,8 +9,30 @@ import { auth } from '@/app/lib/auth';
 
 const sql = neon(`${process.env.DATABASE_URL}`);
 
+const SessionTypeSchema = z.enum([
+  'single_distance',
+  'single_time',
+  'timed_intervals',
+  'distance_intervals',
+]);
+
+const LogModeSchema = z.enum([
+  'single-distance',
+  'single-time',
+  'timed-intervals',
+  'distance-intervals',
+]);
+
+const logModeToSessionType = {
+  'single-distance': 'single_distance',
+  'single-time': 'single_time',
+  'timed-intervals': 'timed_intervals',
+  'distance-intervals': 'distance_intervals',
+} as const;
+
 const RowingSessionFieldsSchema = z.object({
   sessionDate: z.string({error: 'Session date is required'}),
+  sessionType: SessionTypeSchema,
   notes: z.string().nullable(),
 });
 
@@ -35,6 +57,7 @@ export type State = {
 export type RowingSession = {
   id: string;
   sessionDate: string;
+  sessionType: z.infer<typeof SessionTypeSchema>;
   notes: string | null;
   createdAt: string;
 };
@@ -83,6 +106,11 @@ const getIntervalsFormValue = (formData: FormData) => {
 
 const parseRowingSessionForm = (formData: FormData) => ({
   sessionDate: getFormValue(formData, 'sessionDate'),
+  sessionType: (() => {
+    const logMode = getFormValue(formData, 'logMode');
+    if (!logMode || !LogModeSchema.safeParse(logMode).success) return null;
+    return logModeToSessionType[logMode as keyof typeof logModeToSessionType];
+  })(),
   notes: getOptionalTextFormValue(formData, 'notes'),
 });
 
@@ -121,7 +149,7 @@ const getRowingSessionsWithIntervalsForUser = async (
   const offset = page !== undefined && pageSize !== undefined ? (page - 1) * pageSize : 0;
   const rows = await sql`
     WITH filtered_sessions AS (
-      SELECT id, session_date, notes, created_at
+      SELECT id, session_date, session_type, notes, created_at
       FROM rowing_sessions
       WHERE user_id = ${userId}
         AND (${sessionId === undefined} OR id = ${sessionId ?? null})
@@ -131,6 +159,7 @@ const getRowingSessionsWithIntervalsForUser = async (
     SELECT
       s.id,
       s.session_date::text AS "sessionDate",
+      s.session_type AS "sessionType",
       s.notes,
       s.created_at::text AS "createdAt",
       COALESCE(
@@ -151,7 +180,7 @@ const getRowingSessionsWithIntervalsForUser = async (
       ) AS intervals
     FROM filtered_sessions s
     LEFT JOIN rowing_intervals i ON i.rowing_session_id = s.id
-    GROUP BY s.id, s.session_date, s.notes, s.created_at
+    GROUP BY s.id, s.session_date, s.session_type, s.notes, s.created_at
     ORDER BY s.session_date DESC, s.created_at DESC
   `;
 
@@ -211,6 +240,7 @@ export async function createRowingSession(_prevState: State, formData: FormData)
   const {
     userId: validatedUserId,
     sessionDate,
+    sessionType,
     notes,
   } = validatedFields.data;
 
@@ -222,11 +252,13 @@ export async function createRowingSession(_prevState: State, formData: FormData)
       INSERT INTO rowing_sessions (
         user_id,
         session_date,
+        session_type,
         notes
       )
       VALUES (
         ${validatedUserId},
         ${sessionDate},
+        ${sessionType},
         ${notes}
       )
       RETURNING id
@@ -264,6 +296,7 @@ export async function updateRowingSession(
  
   const {
     sessionDate,
+    sessionType,
     notes,
   } = validatedFields.data;
 
@@ -275,6 +308,7 @@ export async function updateRowingSession(
       UPDATE rowing_sessions
       SET
         session_date = ${sessionDate},
+        session_type = ${sessionType},
         notes = ${notes}
       WHERE id = ${id} AND user_id = ${userId}
     `;
