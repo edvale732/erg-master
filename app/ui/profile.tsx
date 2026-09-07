@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { auth } from "@/app/lib/auth";
-import { getRowingSessions } from "@/app/lib/actions";
+import { getRowingSessionsWithIntervals } from "@/app/lib/actions";
 import { LogoutButton } from "@/app/dashboard/logout-button";
 
 const formatDistance = (distance: number) => `${(distance / 1000).toFixed(1)} km`;
@@ -17,9 +17,9 @@ export default async function Profile() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-  const sessions = await getRowingSessions();
-  const totalDistance = sessions.reduce((sum, rowingSession) => sum + rowingSession.totalDistance, 0);
-  const totalTime = sessions.reduce((sum, rowingSession) => sum + rowingSession.totalTimeSeconds, 0);
+  const sessions = await getRowingSessionsWithIntervals();
+  const totalDistance = sessions.reduce((sum, rowingSession) => sum + rowingSession.intervals.reduce((intervalSum, interval) => intervalSum + interval.distance, 0), 0);
+  const totalTime = sessions.reduce((sum, rowingSession) => sum + rowingSession.intervals.reduce((intervalSum, interval) => intervalSum + interval.timeSeconds, 0), 0);
   const averageDistance = sessions.length === 0 ? 0 : totalDistance / sessions.length;
   const memberSince = session?.user.createdAt
     ? new Intl.DateTimeFormat("en", { month: "long", year: "numeric" }).format(new Date(session.user.createdAt))

@@ -14,16 +14,17 @@ const RowingSessionSchema = z.object({
   id: z.uuid(),
   userId: z.string({error: 'User is required'}).min(1, {error: 'User is required'}),
   sessionDate: z.string({error: 'Session date is required'}),
-  workoutType: z.string({error: 'Workout type is required'}).min(1).max(50),
-  totalDistance: z.number({error: 'Total distance is required'}).int().gt(0),
-  totalTimeSeconds: z.number({error: 'Total time is required'}).int().gt(0),
-  targetPaceSeconds: z.number().int().gt(0).nullable(),
-  avgStrokeRate: z.number().int().gt(0).nullable(),
-  targetStrokeRate: z.number().int().gt(0).nullable(),
-  avgWatts: z.number().int().gte(0).nullable(),
-  dragFactor: z.number().int().gt(0).nullable(),
   notes: z.string().nullable(),
   createdAt: z.string({error: 'Creation date is required'})
+});
+
+const RowingIntervalSchema = z.object({
+  intervalNumber: z.number().int().gt(0),
+  distance: z.number().int().gt(0),
+  timeSeconds: z.number().int().gt(0),
+  avgStrokeRate: z.number().int().gt(0).nullish().transform((value) => value ?? null),
+  avgWatts: z.number().int().gte(0).nullish().transform((value) => value ?? null),
+  restTimeSeconds: z.number().int().gte(0).nullish().transform((value) => value ?? null),
 });
  
 const CreateRowingSession = RowingSessionSchema.omit({ id: true, createdAt: true });
@@ -36,16 +37,28 @@ export type State = {
 export type RowingSession = {
   id: string;
   sessionDate: string;
-  workoutType: string;
-  totalDistance: number;
-  totalTimeSeconds: number;
-  targetPaceSeconds: number | null;
-  avgStrokeRate: number | null;
-  targetStrokeRate: number | null;
-  avgWatts: number | null;
-  dragFactor: number | null;
   notes: string | null;
   createdAt: string;
+};
+
+export type RowingInterval = {
+  id: string;
+  rowingSessionId: string;
+  intervalNumber: number;
+  distance: number;
+  timeSeconds: number;
+  avgStrokeRate: number | null;
+  avgWatts: number | null;
+  restTimeSeconds: number | null;
+  createdAt: string;
+}
+
+export type RowingSessionWithIntervals = RowingSession & { intervals: RowingInterval[] };
+
+export type PaginatedRowingSessions = {
+  sessions: RowingSessionWithIntervals[];
+  currentPage: number;
+  totalPages: number;
 };
 
 const getFormValue = (formData: FormData, field: string) => {
@@ -53,30 +66,26 @@ const getFormValue = (formData: FormData, field: string) => {
   return typeof value === 'string' ? value : null;
 };
 
-const getIntegerFormValue = (formData: FormData, field: string) => {
-  const value = getFormValue(formData, field);
-  if (value === null || value.trim() === '') return null;
-
-  const parsedValue = Number(value);
-  return Number.isInteger(parsedValue) ? parsedValue : value;
-};
-
 const getOptionalTextFormValue = (formData: FormData, field: string) => {
   const value = getFormValue(formData, field);
   return value === null || value.trim() === '' ? null : value;
 };
 
+const getIntervalsFormValue = (formData: FormData) => {
+  const value = getFormValue(formData, 'intervals');
+  if (!value) return [];
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
 const parseRowingSessionForm = (formData: FormData, userId: string) => ({
   userId,
   sessionDate: getFormValue(formData, 'sessionDate'),
-  workoutType: getFormValue(formData, 'workoutType'),
-  totalDistance: getIntegerFormValue(formData, 'totalDistance'),
-  totalTimeSeconds: getIntegerFormValue(formData, 'totalTimeSeconds'),
-  targetPaceSeconds: getIntegerFormValue(formData, 'targetPaceSeconds'),
-  avgStrokeRate: getIntegerFormValue(formData, 'avgStrokeRate'),
-  targetStrokeRate: getIntegerFormValue(formData, 'targetStrokeRate'),
-  avgWatts: getIntegerFormValue(formData, 'avgWatts'),
-  dragFactor: getIntegerFormValue(formData, 'dragFactor'),
   notes: getOptionalTextFormValue(formData, 'notes'),
 });
 
@@ -96,14 +105,6 @@ export async function getRowingSessions(): Promise<RowingSession[]> {
     SELECT
       id,
       session_date::text AS "sessionDate",
-      workout_type AS "workoutType",
-      total_distance AS "totalDistance",
-      total_time_seconds AS "totalTimeSeconds",
-      target_pace_seconds AS "targetPaceSeconds",
-      avg_stroke_rate AS "avgStrokeRate",
-      target_stroke_rate AS "targetStrokeRate",
-      avg_watts AS "avgWatts",
-      drag_factor AS "dragFactor",
       notes,
       created_at::text AS "createdAt"
     FROM rowing_sessions
@@ -114,7 +115,7 @@ export async function getRowingSessions(): Promise<RowingSession[]> {
   return rows as RowingSession[];
 }
 
-export async function getRowingSession(id: string): Promise<RowingSession | null> {
+export async function getRowingSession(id: string): Promise<RowingSessionWithIntervals | null> {
   const userId = await getAuthenticatedUserId();
   if (!userId) return null;
 
@@ -122,21 +123,82 @@ export async function getRowingSession(id: string): Promise<RowingSession | null
     SELECT
       id,
       session_date::text AS "sessionDate",
-      workout_type AS "workoutType",
-      total_distance AS "totalDistance",
-      total_time_seconds AS "totalTimeSeconds",
-      target_pace_seconds AS "targetPaceSeconds",
-      avg_stroke_rate AS "avgStrokeRate",
-      target_stroke_rate AS "targetStrokeRate",
-      avg_watts AS "avgWatts",
-      drag_factor AS "dragFactor",
       notes,
       created_at::text AS "createdAt"
     FROM rowing_sessions
     WHERE id = ${id} AND user_id = ${userId}
   `;
 
-  return (rows[0] as RowingSession | undefined) ?? null;
+  const session = rows[0] as RowingSession | undefined;
+  return session ? { ...session, intervals: await getRowingIntervals(session.id) } : null;
+}
+
+export async function getRowingIntervals(sessionId: string): Promise<RowingInterval[]> {
+  const userId = await getAuthenticatedUserId();
+  if (!userId) return [];
+
+  const rows = await sql`
+    SELECT
+      i.id,
+      i.rowing_session_id AS "rowingSessionId",
+      i.interval_number AS "intervalNumber",
+      i.distance,
+      i.time_seconds AS "timeSeconds",
+      i.avg_stroke_rate AS "avgStrokeRate",
+      i.avg_watts AS "avgWatts",
+      i.rest_time_seconds AS "restTimeSeconds",
+      i.created_at::text AS "createdAt"
+    FROM rowing_intervals i
+    INNER JOIN rowing_sessions s ON s.id = i.rowing_session_id
+    WHERE i.rowing_session_id = ${sessionId} AND s.user_id = ${userId}
+    ORDER BY i.interval_number ASC
+  `;
+
+  return rows as RowingInterval[];
+}
+
+export async function getRowingSessionsWithIntervals(): Promise<RowingSessionWithIntervals[]> {
+  const sessions = await getRowingSessions();
+  return Promise.all(sessions.map(async (session) => ({
+    ...session,
+    intervals: await getRowingIntervals(session.id),
+  })));
+}
+
+export async function getPaginatedRowingSessions(page: number, pageSize = 10): Promise<PaginatedRowingSessions> {
+  const userId = await getAuthenticatedUserId();
+  if (!userId) return { sessions: [], currentPage: 1, totalPages: 0 };
+
+  const countRows = await sql`
+    SELECT COUNT(*)::int AS count
+    FROM rowing_sessions
+    WHERE user_id = ${userId}
+  `;
+  const totalSessions = Number(countRows[0]?.count ?? 0);
+  const totalPages = Math.ceil(totalSessions / pageSize);
+  const currentPage = totalPages === 0
+    ? 1
+    : Math.min(Math.max(Math.floor(page), 1), totalPages);
+  const offset = (currentPage - 1) * pageSize;
+
+  const rows = await sql`
+    SELECT
+      id,
+      session_date::text AS "sessionDate",
+      notes,
+      created_at::text AS "createdAt"
+    FROM rowing_sessions
+    WHERE user_id = ${userId}
+    ORDER BY session_date DESC, created_at DESC
+    LIMIT ${pageSize} OFFSET ${offset}
+  `;
+
+  const sessions = await Promise.all((rows as RowingSession[]).map(async (session) => ({
+    ...session,
+    intervals: await getRowingIntervals(session.id),
+  })));
+
+  return { sessions, currentPage, totalPages };
 }
 
 export async function createRowingSession(_prevState: State, formData: FormData) {
@@ -157,46 +219,39 @@ export async function createRowingSession(_prevState: State, formData: FormData)
   const {
     userId: validatedUserId,
     sessionDate,
-    workoutType,
-    totalDistance,
-    totalTimeSeconds,
-    targetPaceSeconds,
-    avgStrokeRate,
-    targetStrokeRate,
-    avgWatts,
-    dragFactor,
     notes,
   } = validatedFields.data;
 
+  const intervals = z.array(RowingIntervalSchema).safeParse(getIntervalsFormValue(formData));
+  if (!intervals.success) return { message: 'Invalid interval data.' };
+
   try {
-    await sql`
+    const sessions = await sql`
       INSERT INTO rowing_sessions (
         user_id,
         session_date,
-        workout_type,
-        total_distance,
-        total_time_seconds,
-        target_pace_seconds,
-        avg_stroke_rate,
-        target_stroke_rate,
-        avg_watts,
-        drag_factor,
         notes
       )
       VALUES (
         ${validatedUserId},
         ${sessionDate},
-        ${workoutType},
-        ${totalDistance},
-        ${totalTimeSeconds},
-        ${targetPaceSeconds},
-        ${avgStrokeRate},
-        ${targetStrokeRate},
-        ${avgWatts},
-        ${dragFactor},
         ${notes}
       )
+      RETURNING id
     `;
+
+    const sessionId = sessions[0].id;
+    for (const interval of intervals.data) {
+      await sql`
+        INSERT INTO rowing_intervals (
+          rowing_session_id, interval_number, distance, time_seconds,
+          avg_stroke_rate, avg_watts, rest_time_seconds
+        ) VALUES (
+          ${sessionId}, ${interval.intervalNumber}, ${interval.distance}, ${interval.timeSeconds},
+          ${interval.avgStrokeRate}, ${interval.avgWatts}, ${interval.restTimeSeconds}
+        )
+      `;
+    }
   } catch (error) {
     console.error(error);
     return { message: 'Database error: Failed to create rowing session.' };
@@ -233,33 +288,33 @@ export async function updateRowingSession(
  
   const {
     sessionDate,
-    workoutType,
-    totalDistance,
-    totalTimeSeconds,
-    targetPaceSeconds,
-    avgStrokeRate,
-    targetStrokeRate,
-    avgWatts,
-    dragFactor,
     notes,
   } = validatedFields.data;
+
+  const intervals = z.array(RowingIntervalSchema).safeParse(getIntervalsFormValue(formData));
+  if (!intervals.success) return { message: 'Invalid interval data.' };
  
   try {
     await sql`
       UPDATE rowing_sessions
       SET
         session_date = ${sessionDate},
-        workout_type = ${workoutType},
-        total_distance = ${totalDistance},
-        total_time_seconds = ${totalTimeSeconds},
-        target_pace_seconds = ${targetPaceSeconds},
-        avg_stroke_rate = ${avgStrokeRate},
-        target_stroke_rate = ${targetStrokeRate},
-        avg_watts = ${avgWatts},
-        drag_factor = ${dragFactor},
         notes = ${notes}
       WHERE id = ${id} AND user_id = ${userId}
     `;
+
+    await sql`DELETE FROM rowing_intervals WHERE rowing_session_id = ${id}`;
+    for (const interval of intervals.data) {
+      await sql`
+        INSERT INTO rowing_intervals (
+          rowing_session_id, interval_number, distance, time_seconds,
+          avg_stroke_rate, avg_watts, rest_time_seconds
+        ) VALUES (
+          ${id}, ${interval.intervalNumber}, ${interval.distance}, ${interval.timeSeconds},
+          ${interval.avgStrokeRate}, ${interval.avgWatts}, ${interval.restTimeSeconds}
+        )
+      `;
+    }
   } catch (error) {
     console.error(error);
     return { message: 'Database error: Failed to update rowing session.' };
@@ -276,6 +331,14 @@ export async function deleteRowingSession(id: string) {
 
   try {
     await sql`
+      DELETE FROM rowing_intervals
+      WHERE rowing_session_id = ${id}
+        AND EXISTS (
+          SELECT 1 FROM rowing_sessions
+          WHERE rowing_sessions.id = ${id} AND rowing_sessions.user_id = ${userId}
+        )
+    `;
+    await sql`
       DELETE FROM rowing_sessions
       WHERE id = ${id} AND user_id = ${userId}
     `;
@@ -285,4 +348,29 @@ export async function deleteRowingSession(id: string) {
   }
 
   revalidatePath('/dashboard');
+  revalidatePath('/dashboard/history');
+  redirect('/dashboard/history');
+}
+
+export async function deleteRowingInterval(intervalId: string) {
+  const userId = await getAuthenticatedUserId();
+  if (!userId) return { message: 'You must be signed in to delete an interval.' };
+
+  try {
+    await sql`
+      DELETE FROM rowing_intervals
+      WHERE id = ${intervalId}
+        AND EXISTS (
+          SELECT 1 FROM rowing_sessions
+          WHERE rowing_sessions.id = rowing_intervals.rowing_session_id
+            AND rowing_sessions.user_id = ${userId}
+        )
+    `;
+  } catch (error) {
+    console.error(error);
+    return { message: 'Database error: Failed to delete rowing interval.' };
+  }
+
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/history');
 }
