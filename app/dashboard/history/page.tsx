@@ -1,9 +1,16 @@
-import { getRowingSessionsWithIntervals } from "@/app/lib/actions";
+import { getPaginatedRowingSessions } from "@/app/lib/actions";
+import Pagination from "@/app/ui/pagination";
 import SessionHistory from "@/app/ui/session-history";
 import { Suspense } from 'react';
 
-export default async function Page() {
-  const sessions = await getRowingSessionsWithIntervals();
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const requestedPage = Number((await searchParams).page ?? '1');
+  const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const { sessions, currentPage, totalPages } = await getPaginatedRowingSessions(page, 5);
 
   return (
     <section className="mx-auto w-full max-w-6xl px-6 py-16 sm:px-10 lg:py-24">
@@ -12,6 +19,11 @@ export default async function Page() {
       <p className="mt-8 max-w-xl text-xl leading-8 text-[#a9bfd7]">Your completed rowing sessions will be listed here.</p>
       <Suspense fallback={<p>Loading sessions...</p>}>
         <SessionHistory sessions={sessions} />
+        {totalPages > 1 && (
+          <div className="mt-8 flex justify-center">
+            <Pagination totalPages={totalPages} currentPage={currentPage} />
+          </div>
+        )}
       </Suspense>
     </section>
   );

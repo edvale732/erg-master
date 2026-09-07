@@ -55,6 +55,12 @@ export type RowingInterval = {
 
 export type RowingSessionWithIntervals = RowingSession & { intervals: RowingInterval[] };
 
+export type PaginatedRowingSessions = {
+  sessions: RowingSessionWithIntervals[];
+  currentPage: number;
+  totalPages: number;
+};
+
 const getFormValue = (formData: FormData, field: string) => {
   const value = formData.get(field);
   return typeof value === 'string' ? value : null;
@@ -157,6 +163,42 @@ export async function getRowingSessionsWithIntervals(): Promise<RowingSessionWit
     ...session,
     intervals: await getRowingIntervals(session.id),
   })));
+}
+
+export async function getPaginatedRowingSessions(page: number, pageSize = 10): Promise<PaginatedRowingSessions> {
+  const userId = await getAuthenticatedUserId();
+  if (!userId) return { sessions: [], currentPage: 1, totalPages: 0 };
+
+  const countRows = await sql`
+    SELECT COUNT(*)::int AS count
+    FROM rowing_sessions
+    WHERE user_id = ${userId}
+  `;
+  const totalSessions = Number(countRows[0]?.count ?? 0);
+  const totalPages = Math.ceil(totalSessions / pageSize);
+  const currentPage = totalPages === 0
+    ? 1
+    : Math.min(Math.max(Math.floor(page), 1), totalPages);
+  const offset = (currentPage - 1) * pageSize;
+
+  const rows = await sql`
+    SELECT
+      id,
+      session_date::text AS "sessionDate",
+      notes,
+      created_at::text AS "createdAt"
+    FROM rowing_sessions
+    WHERE user_id = ${userId}
+    ORDER BY session_date DESC, created_at DESC
+    LIMIT ${pageSize} OFFSET ${offset}
+  `;
+
+  const sessions = await Promise.all((rows as RowingSession[]).map(async (session) => ({
+    ...session,
+    intervals: await getRowingIntervals(session.id),
+  })));
+
+  return { sessions, currentPage, totalPages };
 }
 
 export async function createRowingSession(_prevState: State, formData: FormData) {
