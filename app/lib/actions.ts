@@ -289,6 +289,14 @@ export async function deleteRowingSession(id: string) {
 
   try {
     await sql`
+      DELETE FROM rowing_intervals
+      WHERE rowing_session_id = ${id}
+        AND EXISTS (
+          SELECT 1 FROM rowing_sessions
+          WHERE rowing_sessions.id = ${id} AND rowing_sessions.user_id = ${userId}
+        )
+    `;
+    await sql`
       DELETE FROM rowing_sessions
       WHERE id = ${id} AND user_id = ${userId}
     `;
@@ -298,4 +306,29 @@ export async function deleteRowingSession(id: string) {
   }
 
   revalidatePath('/dashboard');
+  revalidatePath('/dashboard/history');
+  redirect('/dashboard/history');
+}
+
+export async function deleteRowingInterval(intervalId: string) {
+  const userId = await getAuthenticatedUserId();
+  if (!userId) return { message: 'You must be signed in to delete an interval.' };
+
+  try {
+    await sql`
+      DELETE FROM rowing_intervals
+      WHERE id = ${intervalId}
+        AND EXISTS (
+          SELECT 1 FROM rowing_sessions
+          WHERE rowing_sessions.id = rowing_intervals.rowing_session_id
+            AND rowing_sessions.user_id = ${userId}
+        )
+    `;
+  } catch (error) {
+    console.error(error);
+    return { message: 'Database error: Failed to delete rowing interval.' };
+  }
+
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/history');
 }
