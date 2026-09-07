@@ -25,17 +25,7 @@ export default function SessionHistory({ sessions }: { sessions: RowingSessionWi
   }
 
   return (
-    <div className="mt-8 space-y-3">
-      <div className="hidden items-center gap-x-8 px-5 text-sm font-semibold uppercase tracking-[0.15em] text-[#a9bfd7] sm:flex">
-        <div className="shrink-0 sm:w-[12.5rem]">Workout</div>
-        <div className="flex min-w-0 flex-1 gap-x-6">
-          <span className="flex-1">Distance</span>
-          <span className="flex-1">Time</span>
-          <span className="flex-1">Pace / 500 m</span>
-          <span className="flex-1">Intervals</span>
-        </div>
-        <div className="h-10 w-10 shrink-0" />
-      </div>
+    <div className="space-y-3">
       {sessions.map((session) => (
         (() => {
           const totalDistance = session.intervals.reduce((sum, interval) => sum + interval.distance, 0);

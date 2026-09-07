@@ -1,21 +1,11 @@
 export default function ProfileSkeleton() {
   return (
     <section
-      className="mx-auto w-full max-w-6xl motion-safe:animate-[pulse_2s_ease-in-out_infinite] motion-reduce:animate-none px-6 py-16 sm:px-10 lg:py-24"
+      className="mt-12 grid gap-8 motion-safe:animate-[pulse_2s_ease-in-out_infinite] motion-reduce:animate-none lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]"
       aria-label="Loading profile"
       aria-busy="true"
       role="status"
     >
-      <div className="flex flex-col gap-8 border-b border-[#2d4e73] pb-10 sm:flex-row sm:items-end sm:justify-between">
-        <div className="w-full">
-          <div className="h-4 w-24 rounded bg-[#69b3ff]/30" />
-          <div className="mt-5 h-16 max-w-2xl rounded bg-[#f7fbff]/15 sm:h-20" />
-          <div className="mt-8 h-8 max-w-xl rounded bg-[#a9bfd7]/15" />
-        </div>
-        <div className="h-11 w-28 rounded-xl border border-[#f7fbff]/20 bg-[#f7fbff]/10" />
-      </div>
-
-      <div className="mt-12 grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
         <div className="rounded-2xl bg-[#f7fbff] p-7 shadow-[0_16px_50px_rgba(0,0,0,0.2)]">
           <div className="h-4 w-20 rounded bg-[#69b3ff]/30" />
           <div className="mt-3 h-8 w-48 rounded bg-[#071a33]/15" />
@@ -45,7 +35,6 @@ export default function ProfileSkeleton() {
             <div className="h-44 rounded-2xl bg-[#dceeff] p-6" />
           </div>
         </div>
-      </div>
     </section>
   );
 }
