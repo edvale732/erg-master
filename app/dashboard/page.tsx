@@ -7,6 +7,7 @@ import { auth } from "@/app/lib/auth";
 import { WeeklyActivity, WeeklyStreak } from "@/app/ui/dashboard-home";
 import DashboardHomeSkeleton from "@/app/ui/dashboard-home-skeleton";
 
+
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -83,6 +84,7 @@ export default async function Page() {
     redirect("/login");
   }
 
+
   return (
     <section className="mx-auto w-full max-w-6xl px-6 py-16 sm:px-10 lg:py-24">
         <div className="grid gap-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-stretch lg:gap-16">
@@ -91,9 +93,6 @@ export default async function Page() {
             <h1 className="max-w-2xl text-5xl font-semibold leading-[0.95] tracking-tight sm:text-7xl">
               Welcome back, {session.user.name}.
             </h1>
-            <p className="mt-8 max-w-xl text-xl leading-8 text-[#a9bfd7]">
-              Your training space is ready. Keep building your rowing routine one session at a time.
-            </p>
 
             <div className="mt-12 flex flex-wrap gap-4 lg:mt-auto lg:pt-12">
               <Link

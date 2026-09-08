@@ -1,4 +1,5 @@
 import { getRowingSessionsWithIntervals } from "@/app/lib/actions";
+import  { getPredictions } from "@/app/lib/fastapi";
 
 const WEEK_COUNT = 8;
 
@@ -74,6 +75,7 @@ const getWeeks = (sessions: Awaited<ReturnType<typeof getRowingSessionsWithInter
 
 export default async function ProgressWidgets() {
   const sessions = await getRowingSessionsWithIntervals();
+  const predictions = await getPredictions(sessions);
   const weeks = getWeeks(sessions);
   const streaks = getStreakStats(sessions);
   const totalDistance = weeks.reduce((sum, week) => sum + week.distance, 0);
@@ -115,6 +117,11 @@ export default async function ProgressWidgets() {
             <p className="text-sm text-[#55708f]">Longest streak</p>
             <p className="mt-4 text-4xl font-semibold">{streaks.longest} <span className="text-lg font-normal text-[#55708f]">{streaks.longest === 1 ? "day" : "days"}</span></p>
             <p className="mt-2 text-sm text-[#55708f]">Your personal best so far.</p>
+          </div>
+          <div className="rounded-xl bg-[#f7fbff] p-5 shadow-[0_10px_30px_rgba(20,75,120,0.12)]">
+            <p className="text-sm text-[#55708f]">Prediction</p>
+            <p className="mt-4 text-4xl font-semibold">{predictions.prediction}</p>
+            <p className="mt-2 text-sm text-[#55708f]">From the Python prediction service.</p>
           </div>
         </div>
       </section>
