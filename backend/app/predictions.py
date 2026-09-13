@@ -1,7 +1,8 @@
 from fastapi import APIRouter
 from datetime import date
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Any
+from backend.app.ml_model import predict_2k_performance
 
 router = APIRouter(
     prefix="/predictions",
@@ -29,8 +30,4 @@ class PredictionRequest(BaseModel):
 
 @router.post("/")
 async def get_predictions(request: PredictionRequest):
-    
-    return {
-        "prediction": "prediction result",
-        "sessionsUsed": len(request.sessions),
-    }
+    return predict_2k_performance(request.sessions)
