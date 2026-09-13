@@ -5,6 +5,7 @@ export const ProgressSkeleton = () => (
       <div className="h-36 animate-pulse rounded-2xl bg-[#16385f]" />
     </div>
     <div className="mt-5 h-72 animate-pulse rounded-2xl bg-[#16385f]" />
+    <div className="mt-5 h-72 animate-pulse rounded-2xl bg-[#16385f]" />
     <div className="mt-5 h-96 animate-pulse rounded-2xl bg-[#16385f]" />
   </div>
 );

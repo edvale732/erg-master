@@ -6,7 +6,20 @@ from backend.app.main import app
 client = TestClient(app)
 
 
-def test_predictions_returns_number_of_sessions_used():
+def test_predictions_with_empty_sessions():
+    response = client.post(
+        "/predictions/",
+        json={"sessions": []},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["sessionsUsed"] == 0
+    assert data["prediction"] == "No sessions logged yet"
+    assert data["predictedTimeSeconds"] is None
+
+
+def test_predictions_with_valid_sessions():
     response = client.post(
         "/predictions/",
         json={
@@ -28,7 +41,10 @@ def test_predictions_returns_number_of_sessions_used():
     )
 
     assert response.status_code == 200
-    assert response.json() == {
-        "prediction": "prediction result",
-        "sessionsUsed": 1,
-    }
+    data = response.json()
+    assert data["sessionsUsed"] == 1
+    assert "prediction" in data
+    assert isinstance(data["predictedTimeSeconds"], (int, float))
+    assert 330 <= data["predictedTimeSeconds"] <= 600
+    assert data["predictedSplit"] is not None
+    assert data["predictedWatts"] is not None
