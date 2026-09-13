@@ -73,6 +73,12 @@ const getWeeks = (sessions: Awaited<ReturnType<typeof getRowingSessionsWithInter
   return weeks;
 };
 
+const formatTimeSeconds = (sec: number) => {
+  const mins = Math.floor(sec / 60);
+  const remainder = sec % 60;
+  return `${mins}:${remainder < 10 ? "0" : ""}${remainder.toFixed(1)}`;
+};
+
 export default async function ProgressWidgets() {
   const sessions = await getRowingSessionsWithIntervals();
   const predictions = await getPredictions(sessions);
@@ -99,7 +105,7 @@ export default async function ProgressWidgets() {
         <div className="h-36 rounded-2xl bg-[#f7fbff] p-6 text-[#071a33] shadow-[0_16px_50px_rgba(0,0,0,0.2)]"><p className="text-sm text-[#55708f]">Last eight weeks</p><p className="mt-6 text-4xl font-semibold text-[#071a33]">{formatDistance(totalDistance)}</p><p className="mt-2 text-sm text-[#55708f]">total distance rowed</p></div>
       </div>
 
-      <section className="mt-5 h-72 rounded-2xl bg-[#e4f1fc] p-6 text-[#071a33] sm:p-8" aria-labelledby="streaks-heading">
+      <section className="mt-5 rounded-2xl bg-[#e4f1fc] p-6 text-[#071a33] sm:p-8" aria-labelledby="streaks-heading">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-lg font-semibold" id="streaks-heading">Streaks</p>
@@ -118,10 +124,44 @@ export default async function ProgressWidgets() {
             <p className="mt-4 text-4xl font-semibold">{streaks.longest} <span className="text-lg font-normal text-[#55708f]">{streaks.longest === 1 ? "day" : "days"}</span></p>
             <p className="mt-2 text-sm text-[#55708f]">Your personal best so far.</p>
           </div>
+        </div>
+      </section>
+
+      <section className="mt-5 rounded-2xl bg-[#e4f1fc] p-6 text-[#071a33] sm:p-8" aria-labelledby="predictions-heading">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-lg font-semibold" id="predictions-heading">2K Performance Prediction</p>
+            <p className="mt-1 text-sm text-[#55708f]">Machine learning forecast based on your training history.</p>
+          </div>
+          {predictions?.sessionsUsed !== undefined && predictions.sessionsUsed > 0 && (
+            <p className="text-sm font-semibold text-[#1f6fd1]">
+              Based on {predictions.sessionsUsed} {predictions.sessionsUsed === 1 ? "session" : "sessions"}
+            </p>
+          )}
+        </div>
+        <div className="mt-8 grid gap-5 sm:grid-cols-3">
+          <div className="rounded-xl bg-[#0d3b66] p-5 text-[#f7fbff]">
+            <p className="text-sm text-[#b5d3ef]">Predicted 2K Time</p>
+            <p className="mt-4 text-3xl font-semibold sm:text-4xl">
+              {predictions?.predictedTimeSeconds
+                ? formatTimeSeconds(predictions.predictedTimeSeconds)
+                : predictions?.prediction || "No data"}
+            </p>
+            <p className="mt-2 text-sm text-[#dceeff]">Estimated all-out 2,000m test time.</p>
+          </div>
           <div className="rounded-xl bg-[#f7fbff] p-5 shadow-[0_10px_30px_rgba(20,75,120,0.12)]">
-            <p className="text-sm text-[#55708f]">Prediction</p>
-            <p className="mt-4 text-4xl font-semibold">{predictions.prediction}</p>
-            <p className="mt-2 text-sm text-[#55708f]">From the Python prediction service.</p>
+            <p className="text-sm text-[#55708f]">Target Split</p>
+            <p className="mt-4 text-3xl font-semibold text-[#071a33] sm:text-4xl">
+              {predictions?.predictedSplit ? `${predictions.predictedSplit}/500m` : "—"}
+            </p>
+            <p className="mt-2 text-sm text-[#55708f]">Average pace per 500 meters.</p>
+          </div>
+          <div className="rounded-xl bg-[#f7fbff] p-5 shadow-[0_10px_30px_rgba(20,75,120,0.12)]">
+            <p className="text-sm text-[#55708f]">Estimated Power</p>
+            <p className="mt-4 text-3xl font-semibold text-[#071a33] sm:text-4xl">
+              {predictions?.predictedWatts ? `${Math.round(predictions.predictedWatts)} W` : "—"}
+            </p>
+            <p className="mt-2 text-sm text-[#55708f]">Target average wattage output.</p>
           </div>
         </div>
       </section>
