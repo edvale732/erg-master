@@ -1,4 +1,4 @@
-import { getRowingSessionsWithIntervals } from "@/app/lib/actions";
+import { getRowingSessionsWithIntervals, getWeightEntries, getWeightUnit, type WeightEntry, type WeightUnit } from "@/app/lib/actions";
 import  { getPredictions } from "@/app/lib/fastapi";
 
 const WEEK_COUNT = 8;
@@ -79,9 +79,22 @@ const formatTimeSeconds = (sec: number) => {
   return `${mins}:${remainder < 10 ? "0" : ""}${remainder.toFixed(1)}`;
 };
 
+const KG_TO_LB = 2.20462;
+
+const toDisplayWeight = (weightKg: number, unit: WeightUnit) =>
+  unit === "lb" ? weightKg * KG_TO_LB : weightKg;
+
+const formatWeight = (weightKg: number, unit: WeightUnit) =>
+  `${toDisplayWeight(weightKg, unit).toFixed(1)} ${unit}`;
+
+const formatShortDate = (dateString: string) =>
+  new Date(dateString).toLocaleDateString("en", { month: "short", day: "numeric" });
+
 export default async function ProgressWidgets() {
   const sessions = await getRowingSessionsWithIntervals();
   const predictions = await getPredictions(sessions);
+  const weightEntries = await getWeightEntries();
+  const weightUnit = await getWeightUnit();
   const weeks = getWeeks(sessions);
   const streaks = getStreakStats(sessions);
   const totalDistance = weeks.reduce((sum, week) => sum + week.distance, 0);
@@ -97,6 +110,20 @@ export default async function ProgressWidgets() {
   }));
   const linePoints = chartPoints.map((point) => `${point.x},${point.y}`).join(" ");
   const areaPoints = `${chartLeft},${chartBottom} ${linePoints} ${chartRight},${chartBottom}`;
+
+  const weightValues = weightEntries.map((entry) => toDisplayWeight(entry.weightKg, weightUnit));
+  const minWeight = weightValues.length > 0 ? Math.min(...weightValues) : 0;
+  const maxWeight = weightValues.length > 0 ? Math.max(...weightValues) : 1;
+  const weightPadding = (maxWeight - minWeight) * 0.1 || 1;
+  const weightChartMin = minWeight - weightPadding;
+  const weightChartMax = maxWeight + weightPadding;
+  const weightChartRange = weightChartMax - weightChartMin || 1;
+  const weightChartPoints = weightEntries.map((entry, index) => ({
+    x: chartLeft + index * ((chartRight - chartLeft) / Math.max(weightEntries.length - 1, 1)),
+    y: chartBottom - ((weightValues[index] - weightChartMin) / weightChartRange) * (chartBottom - chartTop),
+  }));
+  const weightLinePoints = weightChartPoints.map((point) => `${point.x},${point.y}`).join(" ");
+  const latestWeight: WeightEntry | undefined = weightEntries.at(-1);
 
   return (
     <div className="mt-14">
@@ -180,6 +207,23 @@ export default async function ProgressWidgets() {
           </svg>
           <div className="grid grid-cols-8 gap-2 text-center text-xs text-[#55708f]">
             {weeks.map((week) => <span key={dateKey(week.start)}>{week.label}</span>)}
+          </div>
+        </div>}
+      </figure>
+
+      <figure className="mt-5 min-h-96 rounded-2xl bg-[#f7fbff] p-6 text-[#071a33] shadow-[0_16px_50px_rgba(0,0,0,0.2)] sm:p-8">
+        <figcaption className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-lg font-semibold text-[#071a33]">Weight trend</p><p className="mt-1 text-sm text-[#55708f]">Your logged body weight over time</p></div>{latestWeight && <p className="text-sm font-semibold text-[#1f6fd1]">{formatWeight(latestWeight.weightKg, weightUnit)}</p>}</figcaption>
+        {weightEntries.length === 0 ? <div className="mt-10 flex min-h-56 items-center justify-center rounded-xl border border-dashed border-[#9db8d3] px-6 text-center text-[#55708f]">Your weight trend will appear here after your first logged weigh-in.</div> : <div className="mt-10" role="img" aria-label="Line chart showing recent body weight entries">
+          <svg className="h-auto w-full" viewBox="0 0 800 280" preserveAspectRatio="none" aria-hidden="true">
+            {[chartTop, (chartTop + chartBottom) / 2, chartBottom].map((y) => <line key={y} x1={chartLeft} x2={chartRight} y1={y} y2={y} stroke="#c8dced" strokeWidth="1" />)}
+            <text x="4" y={chartTop + 4} fill="#55708f" fontSize="12">{`${weightChartMax.toFixed(1)} ${weightUnit}`}</text>
+            <text x="4" y={(chartTop + chartBottom) / 2 + 4} fill="#55708f" fontSize="12">{`${((weightChartMax + weightChartMin) / 2).toFixed(1)} ${weightUnit}`}</text>
+            <text x="4" y={chartBottom + 4} fill="#55708f" fontSize="12">{`${weightChartMin.toFixed(1)} ${weightUnit}`}</text>
+            <polyline points={weightLinePoints} fill="none" stroke="#2f80ed" strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" />
+            {weightChartPoints.map((point, index) => <circle key={weightEntries[index].id} cx={point.x} cy={point.y} r="6" fill="#f7fbff" stroke="#2f80ed" strokeWidth="4"><title>{`${formatShortDate(weightEntries[index].recordedAt)}: ${formatWeight(weightEntries[index].weightKg, weightUnit)}`}</title></circle>)}
+          </svg>
+          <div className="grid gap-2 text-center text-xs text-[#55708f]" style={{ gridTemplateColumns: `repeat(${weightEntries.length}, minmax(0, 1fr))` }}>
+            {weightEntries.map((entry) => <span key={entry.id}>{formatShortDate(entry.recordedAt)}</span>)}
           </div>
         </div>}
       </figure>
