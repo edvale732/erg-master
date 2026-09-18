@@ -1,30 +1,14 @@
-import type { getRowingSessionsWithIntervals, WeightUnit } from "@/app/lib/actions";
+import type { getRowingSessionsWithIntervals } from "@/app/lib/actions/rowing-sessions";
+import type { WeightUnit } from "@/app/lib/actions/weight";
+import { dateKey, startOfWeek } from "@/app/lib/weeks";
+
+export { formatDistance, formatDurationDecimal as formatTimeSeconds } from "@/app/lib/format";
 
 export const WEEK_COUNT = 8;
 const KG_TO_LB = 2.20462;
 
 export type Week = { label: string; start: Date; distance: number };
 export type StreakStats = { current: number; longest: number; activeDays: number };
-
-export const startOfWeek = (date: Date) => {
-  const weekStart = new Date(date);
-  const day = weekStart.getDay();
-  weekStart.setDate(weekStart.getDate() - (day === 0 ? 6 : day - 1));
-  weekStart.setHours(0, 0, 0, 0);
-  return weekStart;
-};
-
-export const dateKey = (date: Date) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-
-export const formatDistance = (distance: number) =>
-  distance >= 1000 ? `${(distance / 1000).toFixed(1)} km` : `${distance.toLocaleString()} m`;
-
-export const formatTimeSeconds = (sec: number) => {
-  const mins = Math.floor(sec / 60);
-  const remainder = sec % 60;
-  return `${mins}:${remainder < 10 ? "0" : ""}${remainder.toFixed(1)}`;
-};
 
 export const toDisplayWeight = (weightKg: number, unit: WeightUnit) =>
   unit === "lb" ? weightKg * KG_TO_LB : weightKg;

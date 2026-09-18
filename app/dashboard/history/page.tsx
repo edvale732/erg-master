@@ -1,4 +1,4 @@
-import { getPaginatedRowingSessions } from "@/app/lib/actions";
+import { getPaginatedRowingSessions } from "@/app/lib/actions/rowing-sessions";
 import Pagination from "@/app/ui/pagination";
 import SessionHistory from "@/app/ui/session-history";
 import SessionHistorySkeleton from "@/app/ui/session-history-skeleton";

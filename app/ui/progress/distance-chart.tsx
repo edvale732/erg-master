@@ -1,6 +1,7 @@
+import { dateKey } from "@/app/lib/weeks";
 import { ChartFigure } from "./chart-figure";
 import { CHART_BOUNDS, LineChart } from "./line-chart";
-import { dateKey, formatDistance, type Week } from "./helpers";
+import { formatDistance, type Week } from "./helpers";
 
 export function DistanceChart({ weeks, sessionsCount }: { weeks: Week[]; sessionsCount: number }) {
   const { left, right, top, bottom } = CHART_BOUNDS;

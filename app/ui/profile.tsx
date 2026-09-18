@@ -1,16 +1,7 @@
 import { headers } from "next/headers";
 import { auth } from "@/app/lib/auth";
-import { getRowingSessionsWithIntervals } from "@/app/lib/actions";
-
-const formatDistance = (distance: number) => `${(distance / 1000).toFixed(1)} km`;
-
-const formatDuration = (seconds: number) => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-
-  if (hours === 0) return `${minutes} min`;
-  return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
-};
+import { getRowingSessionsWithIntervals } from "@/app/lib/actions/rowing-sessions";
+import { formatDistanceKm, formatDurationLong } from "@/app/lib/format";
 
 export default async function Profile() {
   const session = await auth.api.getSession({
@@ -56,17 +47,17 @@ export default async function Profile() {
             </div>
             <div className="rounded-2xl bg-[#2f80ed] p-6 text-[#f7fbff]">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#dceeff]">Distance</p>
-              <p className="mt-8 text-4xl font-semibold">{formatDistance(totalDistance)}</p>
+              <p className="mt-8 text-4xl font-semibold">{formatDistanceKm(totalDistance)}</p>
               <p className="mt-2 text-sm text-[#e5f2ff]">total distance rowed</p>
             </div>
             <div className="rounded-2xl bg-[#f7fbff] p-6 shadow-[0_16px_50px_rgba(0,0,0,0.2)]">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#55708f]">Time</p>
-              <p className="mt-8 text-4xl font-semibold">{formatDuration(totalTime)}</p>
+              <p className="mt-8 text-4xl font-semibold">{formatDurationLong(totalTime)}</p>
               <p className="mt-2 text-sm text-[#55708f]">total time on the erg</p>
             </div>
             <div className="rounded-2xl bg-[#dceeff] p-6 text-[#071a33]">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#294a6d]">Average session</p>
-              <p className="mt-8 text-4xl font-semibold">{formatDistance(averageDistance)}</p>
+              <p className="mt-8 text-4xl font-semibold">{formatDistanceKm(averageDistance)}</p>
               <p className="mt-2 text-sm text-[#294a6d]">distance per session</p>
             </div>
           </div>

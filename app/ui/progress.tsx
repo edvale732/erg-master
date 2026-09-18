@@ -1,4 +1,5 @@
-import { getRowingSessionsWithIntervals, getWeightEntries, getWeightUnit } from "@/app/lib/actions";
+import { getRowingSessionsWithIntervals } from "@/app/lib/actions/rowing-sessions";
+import { getWeightEntries, getWeightUnit } from "@/app/lib/actions/weight";
 import { getPredictions } from "@/app/lib/fastapi";
 import { formatDistance, getStreakStats, getWeeks } from "./progress/helpers";
 import { StreakSection } from "./progress/streak-section";

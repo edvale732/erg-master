@@ -1,4 +1,4 @@
-import type { WeightEntry, WeightUnit } from "@/app/lib/actions";
+import type { WeightEntry, WeightUnit } from "@/app/lib/actions/weight";
 import { ChartFigure } from "./chart-figure";
 import { CHART_BOUNDS, LineChart } from "./line-chart";
 import { formatShortDate, formatWeight, toDisplayWeight } from "./helpers";

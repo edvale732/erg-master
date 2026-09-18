@@ -3,11 +3,8 @@
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
-import { neon } from '@neondatabase/serverless';
-import { auth } from '@/app/lib/auth';
-
-const sql = neon(`${process.env.DATABASE_URL}`);
+import { sql } from '@/app/lib/db';
+import { getAuthenticatedUserId } from './auth';
 
 const SessionTypeSchema = z.enum([
   'single_distance',
@@ -82,16 +79,6 @@ export type PaginatedRowingSessions = {
   totalPages: number;
 };
 
-export type WeightUnit = 'kg' | 'lb';
-
-export type WeightEntry = {
-  id: string;
-  weightKg: number;
-  recordedAt: string;
-  notes: string | null;
-  createdAt: string;
-};
-
 const getFormValue = (formData: FormData, field: string) => {
   const value = formData.get(field);
   return typeof value === 'string' ? value : null;
@@ -123,14 +110,6 @@ const parseRowingSessionForm = (formData: FormData) => ({
   })(),
   notes: getOptionalTextFormValue(formData, 'notes'),
 });
-
-const getAuthenticatedUserId = async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  return session?.user.id ?? null;
-};
 
 const revalidateSessionPaths = () => {
   revalidatePath('/dashboard');
@@ -385,37 +364,4 @@ export async function deleteRowingInterval(intervalId: string) {
   }
 
   revalidateSessionPaths();
-}
-
-export async function getWeightUnit(): Promise<WeightUnit> {
-  const userId = await getAuthenticatedUserId();
-  if (!userId) return 'kg';
-
-  const rows = await sql`
-    SELECT weight_unit AS "weightUnit"
-    FROM user_settings
-    WHERE user_id = ${userId}
-  `;
-
-  return (rows[0]?.weightUnit as WeightUnit) ?? 'kg';
-}
-
-export async function getWeightEntries(limit = 12): Promise<WeightEntry[]> {
-  const userId = await getAuthenticatedUserId();
-  if (!userId) return [];
-
-  const rows = await sql`
-    SELECT
-      id,
-      weight_kg::float AS "weightKg",
-      recorded_at::text AS "recordedAt",
-      notes,
-      created_at::text AS "createdAt"
-    FROM weight_entries
-    WHERE user_id = ${userId}
-    ORDER BY recorded_at DESC
-    LIMIT ${limit}
-  `;
-
-  return (rows as WeightEntry[]).reverse();
 }
