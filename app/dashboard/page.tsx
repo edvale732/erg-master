@@ -6,7 +6,7 @@ import { getRowingSessionsWithIntervals } from "@/app/lib/actions/rowing-session
 import { auth } from "@/app/lib/auth";
 import { dateKey, startOfWeek } from "@/app/lib/weeks";
 import { WeeklyActivity, WeeklyStreak } from "@/app/ui/dashboard-home";
-import DashboardHomeSkeleton from "@/app/ui/dashboard-home-skeleton";
+import DashboardHomeSkeleton from "@/app/ui/skeletons/dashboard-home-skeleton";
 
 
 import type { Metadata } from "next";

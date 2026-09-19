@@ -1,11 +1,11 @@
 import { getRowingSessionsWithIntervals } from "@/app/lib/actions/rowing-sessions";
 import { getWeightEntries, getWeightUnit } from "@/app/lib/actions/weight";
 import { getPredictions } from "@/app/lib/fastapi";
-import { formatDistance, getStreakStats, getWeeks } from "./progress/helpers";
-import { StreakSection } from "./progress/streak-section";
-import { PredictionSection } from "./progress/prediction-section";
-import { DistanceChart } from "./progress/distance-chart";
-import { WeightChart } from "./progress/weight-chart";
+import { formatDistance, getStreakStats, getWeeks } from "./helpers";
+import { StreakSection } from "./streak-section";
+import { PredictionSection } from "./prediction-section";
+import { DistanceChart } from "./distance-chart";
+import { WeightChart } from "./weight-chart";
 
 export default async function ProgressWidgets() {
   const sessions = await getRowingSessionsWithIntervals();

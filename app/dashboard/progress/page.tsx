@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import ProgressWidgets from "@/app/ui/progress";
-import { ProgressSkeleton } from "@/app/ui/progress-skeleton";
+import ProgressWidgets from "@/app/ui/progress/progress";
+import { ProgressSkeleton } from "@/app/ui/skeletons/progress-skeleton";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

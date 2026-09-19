@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getRowingSession } from "@/app/lib/actions/rowing-sessions";
-import LoggingForm from "@/app/ui/logging-form";
+import LoggingForm from "@/app/ui/logging-form/logging-form";
 
 import type { Metadata } from "next";
 
