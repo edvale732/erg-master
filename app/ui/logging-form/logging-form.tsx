@@ -12,8 +12,8 @@ import {
   type RowingInterval,
   type State,
 } from "@/app/lib/actions/rowing-sessions";
-import { IntervalRow, inputClassName } from "./logging-form/interval-row";
-import { formatTimeInput, normalizeTimeInput, parseTimeInput } from "./logging-form/time-input";
+import { IntervalRow, inputClassName } from "./interval-row";
+import { formatTimeInput, normalizeTimeInput, parseTimeInput } from "./time-input";
 
 const initialState: State = {};
 
