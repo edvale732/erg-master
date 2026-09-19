@@ -1,4 +1,4 @@
-const formatMinutes = (minutes: number) => `${minutes} min`;
+import { formatMinutes } from "@/app/lib/format";
 
 type WeeklyActivityData = { label: string; date: string; minutes: number }[];
 

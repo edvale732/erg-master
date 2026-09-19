@@ -2,10 +2,11 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { getRowingSessionsWithIntervals } from "@/app/lib/actions";
+import { getRowingSessionsWithIntervals } from "@/app/lib/actions/rowing-sessions";
 import { auth } from "@/app/lib/auth";
+import { dateKey, startOfWeek } from "@/app/lib/weeks";
 import { WeeklyActivity, WeeklyStreak } from "@/app/ui/dashboard-home";
-import DashboardHomeSkeleton from "@/app/ui/dashboard-home-skeleton";
+import DashboardHomeSkeleton from "@/app/ui/skeletons/dashboard-home-skeleton";
 
 
 import type { Metadata } from "next";
@@ -16,17 +17,6 @@ export const metadata: Metadata = {
 };
 
 const WEEKS_TO_DISPLAY = 8;
-
-const startOfWeek = (date: Date) => {
-  const weekStart = new Date(date);
-  const day = weekStart.getDay();
-  weekStart.setDate(weekStart.getDate() - (day === 0 ? 6 : day - 1));
-  weekStart.setHours(0, 0, 0, 0);
-  return weekStart;
-};
-
-const dateKey = (date: Date) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
 const getWeeklyStreak = (sessions: Awaited<ReturnType<typeof getRowingSessionsWithIntervals>>) => {
   const activeWeeks = new Set(

@@ -1,17 +1,11 @@
-import type { RowingSessionWithIntervals } from "@/app/lib/actions";
+import type { RowingSessionWithIntervals } from "@/app/lib/actions/rowing-sessions";
+import { formatDurationClock } from "@/app/lib/format";
 import Link from "next/link";
-
-const formatDuration = (totalTimeSeconds: number) => {
-  const minutes = Math.floor(totalTimeSeconds / 60);
-  const seconds = totalTimeSeconds % 60;
-
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-};
 
 const formatPace = (totalTimeSeconds: number, totalDistance: number) => {
   if (totalDistance <= 0) return "-";
 
-  return formatDuration(Math.round((totalTimeSeconds / totalDistance) * 500));
+  return formatDurationClock(Math.round((totalTimeSeconds / totalDistance) * 500));
 };
 
 export default function SessionHistory({ sessions }: { sessions: RowingSessionWithIntervals[] }) {
@@ -54,7 +48,7 @@ export default function SessionHistory({ sessions }: { sessions: RowingSessionWi
               <dd className="font-semibold text-[#36584f]">{totalDistance.toLocaleString()} m</dd>
             </div>
             <div className="flex-1">
-              <dd className="font-semibold text-[#36584f]">{formatDuration(totalTimeSeconds)}</dd>
+              <dd className="font-semibold text-[#36584f]">{formatDurationClock(totalTimeSeconds)}</dd>
             </div>
             <div className="flex-1">
               <dd className="font-semibold text-[#36584f]">{formatPace(totalTimeSeconds, totalDistance)}</dd>

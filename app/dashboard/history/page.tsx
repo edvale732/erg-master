@@ -1,7 +1,7 @@
-import { getPaginatedRowingSessions } from "@/app/lib/actions";
+import { getPaginatedRowingSessions } from "@/app/lib/actions/rowing-sessions";
 import Pagination from "@/app/ui/pagination";
 import SessionHistory from "@/app/ui/session-history";
-import SessionHistorySkeleton from "@/app/ui/session-history-skeleton";
+import SessionHistorySkeleton from "@/app/ui/skeletons/session-history-skeleton";
 import { Suspense } from "react";
 
 import type { Metadata } from "next";

@@ -3,11 +3,8 @@
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
-import { neon } from '@neondatabase/serverless';
-import { auth } from '@/app/lib/auth';
-
-const sql = neon(`${process.env.DATABASE_URL}`);
+import { sql } from '@/app/lib/db';
+import { getAuthenticatedUserId } from './auth';
 
 const SessionTypeSchema = z.enum([
   'single_distance',
@@ -113,14 +110,6 @@ const parseRowingSessionForm = (formData: FormData) => ({
   })(),
   notes: getOptionalTextFormValue(formData, 'notes'),
 });
-
-const getAuthenticatedUserId = async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  return session?.user.id ?? null;
-};
 
 const revalidateSessionPaths = () => {
   revalidatePath('/dashboard');
