@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import LoggingForm from "@/app/ui/logging-form/logging-form";
+import StrengthLoggingForm from "@/app/ui/logging-form/strength-logging-form";
 import WeightForm from "@/app/ui/logging-form/weight-form";
+import type { Exercise } from "@/app/lib/actions/exercises";
 import type { WeightUnit } from "@/app/lib/actions/weight";
 
 type LogTab = "rowing" | "strength" | "weight";
@@ -13,7 +15,7 @@ const logOptions: { label: string; tab: LogTab }[] = [
   { label: "Log weight", tab: "weight" },
 ];
 
-export default function LogSwitcher({ weightUnit }: { weightUnit: WeightUnit }) {
+export default function LogSwitcher({ weightUnit, exercises }: { weightUnit: WeightUnit; exercises: Exercise[] }) {
   const [activeTab, setActiveTab] = useState<LogTab>("rowing");
 
   return (
@@ -45,6 +47,12 @@ export default function LogSwitcher({ weightUnit }: { weightUnit: WeightUnit }) 
         </div>
       )}
 
+      {activeTab === "strength" && (
+        <div className="mt-8">
+          <StrengthLoggingForm exercises={exercises} weightUnit={weightUnit} />
+        </div>
+      )}
+
       {activeTab === "weight" && (
         <div className="mt-8">
           <WeightForm unit={weightUnit} />
@@ -53,3 +61,4 @@ export default function LogSwitcher({ weightUnit }: { weightUnit: WeightUnit }) 
     </>
   );
 }
+
