@@ -1,6 +1,4 @@
-import { Suspense } from "react";
 import ProgressWidgets from "@/app/ui/progress/progress";
-import { ProgressSkeleton } from "@/app/ui/skeletons/progress-skeleton";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -14,9 +12,7 @@ export default function Page() {
       
       <h1 className="max-w-2xl text-5xl font-semibold leading-[0.95] tracking-tight sm:text-7xl">Progress</h1>
       
-      <Suspense fallback={<ProgressSkeleton />}>
-        <ProgressWidgets />
-      </Suspense>
+      <ProgressWidgets />
     </section>
   );
 }
