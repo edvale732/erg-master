@@ -6,9 +6,11 @@ export type PredictionResponse = {
   sessionsUsed: number;
 };
 
+const FASTAPI_URL = process.env.FASTAPI_URL ?? "http://localhost:8000";
+
 export async function getPredictions(sessions: unknown[]): Promise<PredictionResponse> {
   try {
-    const response = await fetch("http://localhost:8000/predictions/", {
+    const response = await fetch(`${FASTAPI_URL}/predictions/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sessions }),
