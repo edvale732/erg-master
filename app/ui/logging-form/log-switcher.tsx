@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import LoggingForm from "@/app/ui/logging-form/logging-form";
+import StrengthLoggingForm from "@/app/ui/logging-form/strength-logging-form";
 import WeightForm from "@/app/ui/logging-form/weight-form";
+import type { Exercise } from "@/app/lib/actions/exercises";
+import type { StrengthTemplateWithExercises } from "@/app/lib/actions/strength-templates";
 import type { WeightUnit } from "@/app/lib/actions/weight";
 
 type LogTab = "rowing" | "strength" | "weight";
@@ -13,8 +16,21 @@ const logOptions: { label: string; tab: LogTab }[] = [
   { label: "Log weight", tab: "weight" },
 ];
 
-export default function LogSwitcher({ weightUnit }: { weightUnit: WeightUnit }) {
-  const [activeTab, setActiveTab] = useState<LogTab>("rowing");
+export default function LogSwitcher({
+  weightUnit,
+  exercises,
+  templates = [],
+  initialTemplateId,
+  initialTab = "rowing",
+}: {
+  weightUnit: WeightUnit;
+  exercises: Exercise[];
+  templates?: StrengthTemplateWithExercises[];
+  initialTemplateId?: string;
+  initialTab?: LogTab;
+}) {
+  const [activeTab, setActiveTab] = useState<LogTab>(initialTab);
+
 
   return (
     <>
@@ -45,6 +61,12 @@ export default function LogSwitcher({ weightUnit }: { weightUnit: WeightUnit }) 
         </div>
       )}
 
+      {activeTab === "strength" && (
+        <div className="mt-8">
+          <StrengthLoggingForm exercises={exercises} weightUnit={weightUnit} templates={templates} initialTemplateId={initialTemplateId} />
+        </div>
+      )}
+
       {activeTab === "weight" && (
         <div className="mt-8">
           <WeightForm unit={weightUnit} />
@@ -53,3 +75,4 @@ export default function LogSwitcher({ weightUnit }: { weightUnit: WeightUnit }) 
     </>
   );
 }
+

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getRowingSessionsWithIntervals } from "@/app/lib/actions/rowing-sessions";
+import { getStrengthSessionsWithExercises } from "@/app/lib/actions/strength-sessions";
 import { auth } from "@/app/lib/auth";
 import { dateKey, startOfWeek } from "@/app/lib/weeks";
 import { WeeklyActivity, WeeklyStreak } from "@/app/ui/dashboard-home";
@@ -17,8 +18,32 @@ export const metadata: Metadata = {
 };
 
 const WEEKS_TO_DISPLAY = 8;
+const STRENGTH_SET_WORK_SECONDS = 45;
 
-const getWeeklyStreak = (sessions: Awaited<ReturnType<typeof getRowingSessionsWithIntervals>>) => {
+type ActivitySession = { sessionDate: string; minutes: number };
+
+const toActivitySessions = (
+  rowingSessions: Awaited<ReturnType<typeof getRowingSessionsWithIntervals>>,
+  strengthSessions: Awaited<ReturnType<typeof getStrengthSessionsWithExercises>>,
+): ActivitySession[] => [
+  ...rowingSessions.map((session) => ({
+    sessionDate: session.sessionDate,
+    minutes: session.intervals.reduce((sum, interval) => sum + interval.timeSeconds, 0) / 60,
+  })),
+  ...strengthSessions.map((session) => ({
+    sessionDate: session.sessionDate,
+    // No tracked duration for strength sets, so estimate time under tension + rest per set.
+    minutes: session.exercises.reduce(
+      (sum, exercise) => sum + exercise.sets.reduce(
+        (setsSum, set) => setsSum + (STRENGTH_SET_WORK_SECONDS + (set.restTimeSeconds ?? 0)),
+        0,
+      ),
+      0,
+    ) / 60,
+  })),
+];
+
+const getWeeklyStreak = (sessions: ActivitySession[]) => {
   const activeWeeks = new Set(
     sessions.map((session) => dateKey(startOfWeek(new Date(`${session.sessionDate.slice(0, 10)}T00:00:00`)))),
   );
@@ -36,7 +61,7 @@ const getWeeklyStreak = (sessions: Awaited<ReturnType<typeof getRowingSessionsWi
   return streak;
 };
 
-const getWeeklyActivity = (sessions: Awaited<ReturnType<typeof getRowingSessionsWithIntervals>>) => {
+const getWeeklyActivity = (sessions: ActivitySession[]) => {
   const currentWeek = startOfWeek(new Date());
   const activity = Array.from({ length: WEEKS_TO_DISPLAY }, (_, index) => {
     const date = new Date(currentWeek);
@@ -48,14 +73,18 @@ const getWeeklyActivity = (sessions: Awaited<ReturnType<typeof getRowingSessions
   for (const session of sessions) {
     const sessionWeek = startOfWeek(new Date(`${session.sessionDate.slice(0, 10)}T00:00:00`));
     const week = activityByDate.get(dateKey(sessionWeek));
-    if (week) week.minutes += Math.round(session.intervals.reduce((sum, interval) => sum + interval.timeSeconds, 0) / 60);
+    if (week) week.minutes += Math.round(session.minutes);
   }
 
   return activity;
 };
 
 async function DashboardWidgets() {
-  const sessions = await getRowingSessionsWithIntervals();
+  const [rowingSessions, strengthSessions] = await Promise.all([
+    getRowingSessionsWithIntervals(),
+    getStrengthSessionsWithExercises(),
+  ]);
+  const sessions = toActivitySessions(rowingSessions, strengthSessions);
 
   return (
     <div className="grid gap-5 text-left">
@@ -64,6 +93,7 @@ async function DashboardWidgets() {
     </div>
   );
 }
+
 
 export default async function Page() {
   const session = await auth.api.getSession({
