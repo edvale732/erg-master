@@ -1,5 +1,6 @@
 import { getWeightUnit } from "@/app/lib/actions/weight";
 import { getExercises } from "@/app/lib/actions/exercises";
+import { getStrengthTemplates } from "@/app/lib/actions/strength-templates";
 import LogSwitcher from "@/app/ui/logging-form/log-switcher";
 
 import type { Metadata } from "next";
@@ -9,13 +10,28 @@ export const metadata: Metadata = {
   description: "Log your activities in ErgMaster"
 };
 
-export default async function Page() {
-  const [weightUnit, exercises] = await Promise.all([getWeightUnit(), getExercises()]);
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ template?: string }>;
+}) {
+  const { template: initialTemplateId } = await searchParams;
+  const [weightUnit, exercises, templates] = await Promise.all([
+    getWeightUnit(),
+    getExercises(),
+    getStrengthTemplates(),
+  ]);
 
   return (
     <section className="mx-auto w-full max-w-6xl px-6 pt-8 pb-16 sm:px-10 lg:pt-12 lg:pb-24">
       <h1 className="text-3xl font-semibold leading-tight tracking-tight sm:text-5xl">Log</h1>
-      <LogSwitcher weightUnit={weightUnit} exercises={exercises} />
+      <LogSwitcher
+        weightUnit={weightUnit}
+        exercises={exercises}
+        templates={templates}
+        initialTemplateId={initialTemplateId}
+        initialTab={initialTemplateId ? "strength" : "rowing"}
+      />
     </section>
   );
 }

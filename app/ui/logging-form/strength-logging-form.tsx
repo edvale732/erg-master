@@ -13,6 +13,7 @@ import {
   type State,
 } from "@/app/lib/actions/strength-sessions";
 import type { Exercise } from "@/app/lib/actions/exercises";
+import type { StrengthTemplateWithExercises } from "@/app/lib/actions/strength-templates";
 import type { WeightUnit } from "@/app/lib/actions/weight";
 import { inputClassName } from "./interval-row";
 import { StrengthExerciseRow, type ExerciseInput } from "./strength-exercise-row";
@@ -35,20 +36,40 @@ const sessionToExerciseInputs = (session?: StrengthSessionWithExercises): Exerci
   }));
 };
 
+const templateToExerciseInputs = (template: StrengthTemplateWithExercises): ExerciseInput[] =>
+  template.exercises.map((exercise) => ({
+    exerciseId: exercise.exerciseId,
+    sets: Array.from({ length: exercise.targetSets }, () => ({})),
+  }));
+
 export default function StrengthLoggingForm({
   session,
   exercises,
   weightUnit,
+  templates = [],
+  initialTemplateId,
 }: {
   session?: StrengthSessionWithExercises;
   exercises: Exercise[];
   weightUnit: WeightUnit;
+  templates?: StrengthTemplateWithExercises[];
+  initialTemplateId?: string;
 }) {
   const action = session ? updateStrengthSession.bind(null, session.id) : createStrengthSession;
   const [state, formAction, isPending] = useActionState(action, initialState);
-  const [exerciseInputs, setExerciseInputs] = useState<ExerciseInput[]>(sessionToExerciseInputs(session));
+  const initialTemplate = !session ? templates.find((template) => template.id === initialTemplateId) : undefined;
+  const [exerciseInputs, setExerciseInputs] = useState<ExerciseInput[]>(
+    initialTemplate ? templateToExerciseInputs(initialTemplate) : sessionToExerciseInputs(session),
+  );
+  const [selectedTemplateId, setSelectedTemplateId] = useState(initialTemplate?.id ?? "");
   const [isDeleting, startDeleting] = useTransition();
   const router = useRouter();
+
+  const applyTemplate = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    const template = templates.find((item) => item.id === templateId);
+    if (template) setExerciseInputs(templateToExerciseInputs(template));
+  };
 
   const exercisesPayload = exerciseInputs.map((exercise, exerciseIndex) => ({
     exerciseId: exercise.exerciseId,
@@ -135,6 +156,18 @@ export default function StrengthLoggingForm({
           <textarea className={`${inputClassName} min-h-32 resize-y`} name="notes" defaultValue={session?.notes ?? ""} placeholder="How did the session feel?" />
           <FieldError errors={state.errors} field="notes" />
         </label>
+
+        {!session && templates.length > 0 && (
+          <label className="text-sm font-semibold text-[#294a6d] sm:col-span-2">
+            Start from a template
+            <select className={inputClassName} value={selectedTemplateId} onChange={(event) => applyTemplate(event.target.value)}>
+              <option value="">None</option>
+              {templates.map((template) => (
+                <option key={template.id} value={template.id}>{template.name}</option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <div className="sm:col-span-2">
           <p className="text-sm font-semibold text-[#294a6d]">Exercises</p>
