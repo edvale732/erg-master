@@ -244,6 +244,33 @@ Better Auth generates and manages the following authentication tables and fields
 | `verification` | Stores verification challenges: `id` (record identifier), `identifier` (email or other item being verified), `value` (verification token/code), `expiresAt` (expiration time), `createdAt` and `updatedAt` (record timestamps). |
 
 
+# Automated Testing
+
+GitHub Actions runs the CI workflow whenever code is pushed to `main` or a pull
+request targeting `main` is opened or updated. The workflow can also be started
+manually from the Actions tab.
+
+The workflow has two jobs:
+
+- **Frontend:** installs dependencies, checks TypeScript types, runs ESLint, and
+  builds the Next.js application.
+- **Backend:** installs the Python dependencies and runs the pytest suite in
+  `backend/tests`. The current tests exercise the predictions endpoint with
+  empty and valid session data.
+
+The frontend job currently checks types, lint, and build rather than running a
+separate frontend unit-test suite. To run the same checks locally:
+
+```sh
+pnpm install
+pnpm exec tsc --noEmit
+pnpm run lint
+pnpm run build
+
+python -m pip install -r backend/requirements.txt
+python -m pytest backend/tests
+```
+
 # Planned Features
 
 - Flexibility tracking
@@ -251,4 +278,3 @@ Better Auth generates and manages the following authentication tables and fields
 - Allow predictions for more distances
 - Mobile app
 - Import workouts from Concept2
-
